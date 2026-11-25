@@ -1,0 +1,17 @@
+{
+  "name": "axel-3d-studio-ai-stl-creator-image-to-3d-auto-repair",
+  "version": "1.0.0 beta",
+  "description": "Axel — 3D Studio | AI STL Creator, Image-to-3D & Auto-Repair - Packaged with E-Composer",
+  "scripts": {
+    "cap:add": "npx cap add android",
+    "cap:sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/assets": "^3.0.5"
+  }
+}
