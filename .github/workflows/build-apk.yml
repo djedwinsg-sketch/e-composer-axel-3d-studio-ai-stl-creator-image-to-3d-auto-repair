@@ -1,0 +1,58 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor Dependencies
+        run: npm install
+
+      - name: Add & Sync Capacitor Android Platform
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Apply App Version, Icon & Display Settings
+        run: |
+          node -e 'const fs=require("fs"); const p="android/app/build.gradle"; let s=fs.readFileSync(p,"utf8"); s=s.replace(/versionCode\s+\d+/, "versionCode 1").replace(/versionName\s+"[^"]+"/, "versionName \"1.0.0 beta\""); fs.writeFileSync(p,s);'
+          if [ -f "resources/icon.png" ]; then
+            npx capacitor-assets generate --android || true
+            for dir in android/app/src/main/res/mipmap-*; do
+              if [ -d "$dir" ]; then
+                cp resources/icon.png "$dir/ic_launcher.png" || true
+                cp resources/icon.png "$dir/ic_launcher_round.png" || true
+              fi
+            done
+          fi
+
+      - name: Build Debug APK with Gradle
+        run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload app-debug.apk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
