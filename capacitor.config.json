@@ -1,0 +1,10 @@
+{
+  "appId": "com.app.axel3dstudioaistlcreatorimageto3dautorepair",
+  "appName": "Axel — 3D Studio | AI STL Creator, Image-to-3D & Auto-Repair",
+  "webDir": "www",
+  "backgroundColor": "#0d9488",
+  "android": {
+    "backgroundColor": "#0d9488",
+    "allowMixedContent": true
+  }
+}
