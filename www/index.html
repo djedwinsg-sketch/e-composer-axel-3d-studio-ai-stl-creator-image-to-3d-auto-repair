@@ -1,0 +1,3418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Axel — 3D Studio | AI STL Creator, Image-to-3D & Auto-Repair</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            surface: {
+              main: '#F4F0FA',
+              panel: '#EAE3F7',
+              card: '#FAF8FF',
+              border: '#DDD4F0',
+            },
+            ink: {
+              primary: '#2A223D',
+              muted: '#5E5278',
+            },
+            axel: {
+              teal: '#0D9488',
+              tealHover: '#14B8A6',
+              mint: '#2DD4BF',
+              glow: '#5EEAD4',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Verified Three.js v0.170.0 Import Map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #F4F0FA;
+      color: #2A223D;
+      font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Full-bleed Soft Lavender-Slate Studio Viewport */
+    #viewport-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+      background: radial-gradient(circle at 46% 35%, #EEE9F8 0%, #E1D9F0 55%, #D3C8E8 100%);
+      z-index: 0;
+    }
+    #viewport-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* Refined Light-Purple Frosted Glass Panels */
+    .glass-panel {
+      background: rgba(244, 240, 250, 0.90);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid #DDD4F0;
+      box-shadow: 0 12px 32px -10px rgba(42, 34, 61, 0.14), 0 2px 6px rgba(42, 34, 61, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    }
+    .elevated-card {
+      background: #FAF8FF;
+      border: 1px solid #DDD4F0;
+      box-shadow: 0 4px 14px -4px rgba(42, 34, 61, 0.08);
+    }
+
+    /* Teal Primary & Magic Wand Buttons */
+    .btn-teal {
+      background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+      color: #FFFFFF;
+      box-shadow: 0 6px 16px -4px rgba(13, 148, 136, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .btn-teal:hover {
+      background: linear-gradient(135deg, #0F766E 0%, #0D9488 100%);
+      box-shadow: 0 8px 20px -4px rgba(13, 148, 136, 0.55);
+    }
+    .btn-wand {
+      background: linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%);
+      color: #082F2E;
+      box-shadow: 0 6px 16px -4px rgba(20, 184, 166, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+    .btn-wand:hover {
+      background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+      color: #FFFFFF;
+    }
+
+    /* Modals always hidden unless .is-open is set */
+    .studio-modal {
+      display: none;
+    }
+    .studio-modal.is-open {
+      display: flex;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #C9BBE8;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #14B8A6;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: linear-gradient(90deg, #DDD4F0, #99F6E4);
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 999px;
+      background: #0D9488;
+      cursor: pointer;
+      border: 2.5px solid #FFFFFF;
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.45);
+    }
+
+    /* Clean number inputs */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* Micro-animations */
+    @keyframes pulseSoft {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.88); }
+    }
+    .pulse-soft {
+      animation: pulseSoft 2.2s infinite ease-in-out;
+    }
+    @keyframes bounceDot {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+    .typing-dot:nth-child(1) { animation: bounceDot 1.2s infinite 0s; }
+    .typing-dot:nth-child(2) { animation: bounceDot 1.2s infinite 0.15s; }
+    .typing-dot:nth-child(3) { animation: bounceDot 1.2s infinite 0.3s; }
+  </style>
+</head>
+<body class="select-none text-[#2A223D]">
+
+  <!-- ====================================================================== -->
+  <!-- 3D WEBGL VIEWPORT                                                      -->
+  <!-- ====================================================================== -->
+  <div id="viewport-container"></div>
+
+  <!-- GLOBAL DRAG & DROP OVERLAY -->
+  <div id="drop-overlay" class="studio-modal fixed inset-0 z-50 items-center justify-center bg-[#2A223D]/45 backdrop-blur-md">
+    <div class="glass-panel rounded-3xl p-8 sm:p-10 text-center border-2 border-dashed border-[#14B8A6] max-w-md mx-4 bg-[#FAF8FF]/95">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#EAE3F7] text-[#0D9488] flex items-center justify-center border border-[#DDD4F0]">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-[#2A223D] mb-1">Drop 3D Model or Image</h2>
+      <p class="text-sm text-[#5E5278]">
+        3D Models: <span class="text-[#0D9488] font-mono font-semibold">.STL .OBJ .GLB .GLTF</span><br />
+        Image → 3D: <span class="text-[#6D28D9] font-mono font-semibold">.PNG .JPG .WEBP</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- HIDDEN FILE INPUTS -->
+  <input id="file-input" type="file" accept=".stl,.obj,.glb,.gltf" class="hidden" />
+  <input id="img3d-file-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+  <input id="chat-image-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+
+  <!-- ====================================================================== -->
+  <!-- TOP NAVIGATION BAR                                                     -->
+  <!-- ====================================================================== -->
+  <header class="fixed top-2.5 left-2.5 right-2.5 z-30 flex items-center justify-between gap-2 pointer-events-none">
+    <!-- Left: Axel Brand + Primary Studio Actions -->
+    <div class="glass-panel rounded-2xl px-2 sm:px-3 py-1.5 flex items-center gap-1.5 pointer-events-auto max-w-[calc(100vw-116px)] sm:max-w-[calc(100vw-190px)] overflow-x-auto no-scrollbar">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-2 pr-2 sm:pr-3 border-r border-[#DDD4F0] shrink-0">
+        <div class="axel-avatar-slot w-9 h-9 rounded-xl overflow-hidden shadow-sm shrink-0"></div>
+        <div class="leading-tight hidden sm:block">
+          <div class="flex items-center gap-1.5">
+            <span class="text-base font-extrabold tracking-tight text-[#2A223D]">Axel</span>
+            <span class="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-[#EAE3F7] text-[#0D9488] border border-[#DDD4F0]">3D Studio</span>
+          </div>
+          <div class="text-[10px] text-[#5E5278] font-medium">AI STL Creator &amp; Auto-Repair</div>
+        </div>
+      </div>
+
+      <!-- Import File -->
+      <button id="btn-import" type="button" title="Import .STL, .OBJ, .GLB, .GLTF" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[#2A223D] hover:bg-[#EAE3F7] hover:text-[#0D9488] transition shrink-0">
+        <svg class="w-4 h-4 text-[#0D9488]" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <span>Import</span>
+      </button>
+
+      <!-- Image -> 3D -->
+      <button id="btn-image-to-3d" type="button" title="Convert Image to 3D Object" class="btn-teal flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 15l-5-5L5 21" />
+        </svg>
+        <span>Image → 3D</span>
+      </button>
+
+      <!-- MakerWorld Visual Browser -->
+      <button id="btn-makerworld" type="button" title="Browse MakerWorld & Built-in 3D Models" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[#2A223D] hover:bg-[#EAE3F7] hover:text-[#0D9488] transition shrink-0">
+        <svg class="w-4 h-4 text-[#7C3AED]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+        </svg>
+        <span>MakerWorld</span>
+      </button>
+
+      <!-- Auto-Correct Magic Wand -->
+      <button id="btn-autocorrect" type="button" title="1-Click Auto-Correct & Print Repair" class="btn-wand flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 4V2m0 14v-2M8 9h2m10 0h2m-4.2-4.2l1.4-1.4M10.8 13.2l-6.8 6.8a1.5 1.5 0 01-2.1-2.1l6.8-6.8m7.1-2.9l-2.1 2.1" />
+        </svg>
+        <span class="hidden md:inline">Auto-Correct</span>
+        <span class="md:hidden">Fix</span>
+      </button>
+
+      <!-- Export Modal Trigger -->
+      <button id="btn-export-open" type="button" title="Export .STL, .OBJ, or .GLB" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[#2A223D] bg-[#FAF8FF] hover:bg-[#FFFFFF] border border-[#DDD4F0] hover:border-[#14B8A6] transition shrink-0">
+        <svg class="w-4 h-4 text-[#0D9488]" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Export</span>
+      </button>
+    </div>
+
+    <!-- Right: Settings Gear & Axel AI Toggle -->
+    <div class="glass-panel rounded-2xl px-1.5 sm:px-2 py-1.5 flex items-center gap-1.5 pointer-events-auto shrink-0">
+      <button id="btn-settings-open" type="button" title="Studio Settings & Optional Gemini API Key" class="p-2 rounded-xl text-[#5E5278] hover:text-[#0D9488] hover:bg-[#EAE3F7] transition">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </button>
+
+      <button id="btn-toggle-axel" type="button" title="Toggle Axel AI Assistant" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-[#FAF8FF] text-[#0D9488] border border-[#14B8A6]/60 hover:bg-[#F0FDFA] transition">
+        <span class="w-2 h-2 rounded-full bg-[#14B8A6] pulse-soft"></span>
+        <span>Axel AI</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ====================================================================== -->
+  <!-- LEFT FLOATING / DOCKED TOOL DOCK                                       -->
+  <!-- ====================================================================== -->
+  <aside class="fixed left-2.5 top-20 bottom-20 z-20 flex flex-col justify-center gap-2 pointer-events-none">
+    <div class="glass-panel rounded-2xl p-1.5 flex flex-col gap-1 pointer-events-auto max-h-full overflow-y-auto no-scrollbar">
+      <!-- Transform Modes -->
+      <button data-tool="select" type="button" title="Select / Orbit (Q)" class="tool-btn flex flex-col items-center justify-center px-2 py-1.5 rounded-xl bg-[#0D9488] text-white transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Select</span>
+      </button>
+      <button data-tool="translate" type="button" title="Move (W or G)" class="tool-btn flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 2v20M2 12h20M12 2l-3 3m3-3l3 3M12 22l-3-3m3 3l3-3M2 12l3-3m-3 3l3 3M22 12l-3-3m3 3l-3 3" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Move</span>
+      </button>
+      <button data-tool="rotate" type="button" title="Rotate (E or R)" class="tool-btn flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Rotate</span>
+      </button>
+      <button data-tool="scale" type="button" title="Scale (S)" class="tool-btn flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Scale</span>
+      </button>
+
+      <div class="h-px bg-[#DDD4F0] my-0.5 mx-1"></div>
+
+      <!-- Quick Add Trigger -->
+      <button id="btn-quick-add" type="button" title="Quick Add 3D Shape or Custom 3D Text" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl bg-[#CCFBF1] text-[#0F766E] hover:bg-[#14B8A6] hover:text-white transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Add</span>
+      </button>
+
+      <div class="h-px bg-[#DDD4F0] my-0.5 mx-1"></div>
+
+      <!-- Quick Actions -->
+      <button id="btn-lay-flat" type="button" title="Lay Flat on Bed (Y=0)" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#0D9488] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Flat</span>
+      </button>
+      <button id="btn-center-bed" type="button" title="Center on Build Plate" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#0D9488] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3" />
+          <path stroke-linecap="round" d="M12 2v4m0 12v4M2 12h4m12 0h4" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Center</span>
+      </button>
+      <button id="btn-mirror-x" type="button" title="Mirror X" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#0D9488] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M8 7l-5 5 5 5V7zm8 0l5 5-5 5V7z" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Mirror</span>
+      </button>
+      <button id="btn-duplicate" type="button" title="Duplicate Selected" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#0D9488] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Copy</span>
+      </button>
+      <button id="btn-delete" type="button" title="Delete Selected (Del)" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-rose-600 hover:bg-rose-100 transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        <span class="text-[9px] font-bold mt-0.5">Delete</span>
+      </button>
+
+      <div class="h-px bg-[#DDD4F0] my-0.5 mx-1"></div>
+
+      <!-- Undo / Redo & View Mode -->
+      <div class="grid grid-cols-2 gap-1">
+        <button id="btn-undo" type="button" title="Undo (Ctrl+Z)" class="p-1.5 rounded-lg text-[#5E5278] hover:text-[#2A223D] hover:bg-[#EAE3F7] disabled:opacity-35 transition flex items-center justify-center" disabled>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
+        </button>
+        <button id="btn-redo" type="button" title="Redo (Ctrl+Y)" class="p-1.5 rounded-lg text-[#5E5278] hover:text-[#2A223D] hover:bg-[#EAE3F7] disabled:opacity-35 transition flex items-center justify-center" disabled>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+          </svg>
+        </button>
+      </div>
+      <button id="btn-view-mode" type="button" title="Cycle View: Solid / Wireframe / X-Ray" class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl text-[#5E5278] hover:text-[#0D9488] hover:bg-[#EAE3F7] transition min-w-[52px]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <span id="view-mode-label" class="text-[9px] font-bold mt-0.5">Solid</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- QUICK ADD FLOATING POPOVER (Positioned outside scrollable dock so it never clips) -->
+  <div id="quick-add-menu" class="studio-modal fixed left-[72px] top-1/2 -translate-y-1/2 z-40 w-64 glass-panel rounded-2xl p-2.5 flex-col bg-[#FAF8FF]/95">
+    <div class="flex items-center justify-between px-1.5 pb-1.5">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-[#5E5278]">Quick Add 3D Shape</span>
+      <button id="btn-close-quick-add" type="button" class="text-xs font-bold text-[#5E5278] hover:text-[#2A223D] px-1">✕</button>
+    </div>
+    <div class="grid grid-cols-2 gap-1.5">
+      <button data-add="box" type="button" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-[#2A223D] bg-[#FFFFFF] hover:bg-[#EAE3F7] border border-[#DDD4F0] transition">
+        <span class="w-2.5 h-2.5 rounded-xs bg-[#14B8A6]"></span> Cube
+      </button>
+      <button data-add="cylinder" type="button" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-[#2A223D] bg-[#FFFFFF] hover:bg-[#EAE3F7] border border-[#DDD4F0] transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#0D9488]"></span> Cylinder
+      </button>
+      <button data-add="sphere" type="button" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-[#2A223D] bg-[#FFFFFF] hover:bg-[#EAE3F7] border border-[#DDD4F0] transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]"></span> Sphere
+      </button>
+      <button data-add="cone" type="button" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-[#2A223D] bg-[#FFFFFF] hover:bg-[#EAE3F7] border border-[#DDD4F0] transition">
+        <span class="w-2.5 h-2.5 rotate-45 bg-[#2DD4BF]"></span> Cone
+      </button>
+      <button data-add="torus" type="button" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-[#2A223D] bg-[#FFFFFF] hover:bg-[#EAE3F7] border border-[#DDD4F0] transition">
+        <span class="w-2.5 h-2.5 rounded-full border-2 border-[#7C3AED]"></span> Torus
+      </button>
+      <button data-add="keychain" type="button" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-semibold text-[#2A223D] bg-[#FFFFFF] hover:bg-[#EAE3F7] border border-[#DDD4F0] transition">
+        <span class="w-2.5 h-2.5 rounded-sm bg-[#0F766E]"></span> Keychain
+      </button>
+    </div>
+
+    <div class="h-px bg-[#DDD4F0] my-2.5"></div>
+    <div class="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#0D9488]">Custom 3D Text</div>
+    <div class="flex items-center gap-1.5">
+      <input id="quick-text-input" type="text" maxlength="14" value="AXEL" placeholder="Your text..." class="flex-1 min-w-0 bg-[#FFFFFF] border border-[#DDD4F0] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-[#2A223D] focus:outline-none focus:border-[#14B8A6]" />
+      <button id="btn-add-3d-text" type="button" class="px-3 py-1.5 rounded-xl btn-teal text-xs font-bold transition shrink-0">Add</button>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- BOTTOM PRECISION BAR                                                   -->
+  <!-- ====================================================================== -->
+  <div id="stats-pill" class="fixed bottom-2.5 left-2.5 z-20 glass-panel rounded-2xl px-2.5 sm:px-3 py-2 flex flex-wrap items-center gap-2 text-xs max-w-[calc(100vw-20px)] lg:max-w-[calc(100vw-420px)]">
+    <!-- Bed Fit Status Badge -->
+    <div id="stat-status-badge" class="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-emerald-100 border border-emerald-300">
+      <span id="stat-status-dot" class="w-2 h-2 rounded-full bg-emerald-600"></span>
+      <span id="stat-status-text" class="font-bold text-emerald-800">Fits Bed</span>
+    </div>
+
+    <!-- Live Numeric W × D × H (mm) Inputs -->
+    <div class="flex items-center gap-1 font-mono text-[11px]">
+      <label class="flex items-center gap-1 bg-[#FFFFFF] border border-[#DDD4F0] focus-within:border-[#14B8A6] rounded-lg px-1.5 py-0.5">
+        <span class="text-[#7C3AED] font-bold">W</span>
+        <input id="dim-x" type="number" step="1" min="1" max="500" class="w-10 sm:w-11 bg-transparent text-[#2A223D] font-semibold focus:outline-none text-right" value="0" />
+      </label>
+      <span class="text-[#5E5278]">×</span>
+      <label class="flex items-center gap-1 bg-[#FFFFFF] border border-[#DDD4F0] focus-within:border-[#14B8A6] rounded-lg px-1.5 py-0.5">
+        <span class="text-[#0D9488] font-bold">D</span>
+        <input id="dim-z" type="number" step="1" min="1" max="500" class="w-10 sm:w-11 bg-transparent text-[#2A223D] font-semibold focus:outline-none text-right" value="0" />
+      </label>
+      <span class="text-[#5E5278]">×</span>
+      <label class="flex items-center gap-1 bg-[#FFFFFF] border border-[#DDD4F0] focus-within:border-[#14B8A6] rounded-lg px-1.5 py-0.5">
+        <span class="text-[#0284C7] font-bold">H</span>
+        <input id="dim-y" type="number" step="1" min="1" max="500" class="w-10 sm:w-11 bg-transparent text-[#2A223D] font-semibold focus:outline-none text-right" value="0" />
+      </label>
+      <span class="text-[#5E5278] font-semibold hidden sm:inline">mm</span>
+      <button id="btn-lock-aspect" type="button" title="Toggle Aspect Ratio Lock" class="ml-0.5 p-1.5 rounded-lg bg-[#EAE3F7] text-[#0D9488] hover:bg-[#DDD4F0] transition">
+        <svg id="icon-lock-closed" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 018 0v4" />
+        </svg>
+        <svg id="icon-lock-open" class="w-3.5 h-3.5 hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 017.5-2" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Build Plate Size Selector -->
+    <div class="flex items-center pl-1.5 border-l border-[#DDD4F0]">
+      <select id="bed-size-select" title="Build Plate Size" class="bg-[#FFFFFF] text-[11px] font-mono font-semibold text-[#2A223D] rounded-lg px-2 py-1 border border-[#DDD4F0] focus:outline-none focus:border-[#14B8A6] cursor-pointer">
+        <option value="180">180mm Bed</option>
+        <option value="200">200mm Bed</option>
+        <option value="256" selected>256mm Bed</option>
+        <option value="300">300mm Bed</option>
+      </select>
+    </div>
+
+    <!-- Volume & Triangle Count -->
+    <div class="hidden md:flex items-center gap-2 pl-1.5 border-l border-[#DDD4F0] font-mono text-[11px] text-[#5E5278]">
+      <span><strong id="stat-volume" class="text-[#2A223D]">0.0</strong> cm³</span>
+      <span>•</span>
+      <span><strong id="stat-tris" class="text-[#2A223D]">0</strong> tris</span>
+    </div>
+
+    <!-- Active Model Name -->
+    <div class="hidden xl:block text-[#5E5278] font-semibold text-[11px] truncate max-w-[130px] pl-1.5 border-l border-[#DDD4F0]" id="stat-name">Empty Bed</div>
+  </div>
+
+  <!-- TOAST & AUTO-CORRECT REPORT CONTAINER -->
+  <div id="toast-container" class="fixed bottom-16 left-3 sm:left-1/2 sm:-translate-x-1/2 z-50 flex flex-col gap-2 w-[calc(100vw-24px)] sm:w-96 pointer-events-none"></div>
+
+  <!-- MOBILE DRAWER BACKDROP FOR AXEL AI -->
+  <div id="axel-backdrop" class="studio-modal fixed inset-0 z-20 bg-[#2A223D]/35 backdrop-blur-xs lg:hidden"></div>
+
+  <!-- ====================================================================== -->
+  <!-- RIGHT SIDEBAR / MOBILE DRAWER: AXEL AI ASSISTANT                       -->
+  <!-- ====================================================================== -->
+  <aside id="axel-panel" class="fixed top-16 sm:top-20 right-2.5 bottom-2.5 z-30 w-[calc(100vw-20px)] max-w-[380px] glass-panel rounded-3xl flex flex-col overflow-hidden transition-all duration-300 transform translate-x-0">
+    <!-- Axel Header -->
+    <div class="px-4 py-3 border-b border-[#DDD4F0] flex items-center justify-between bg-[#EAE3F7]/95">
+      <div class="flex items-center gap-2.5">
+        <div class="axel-avatar-slot w-10 h-10 rounded-xl overflow-hidden shadow-sm shrink-0"></div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h2 class="text-sm font-extrabold text-[#2A223D]">Axel</h2>
+            <span class="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-[#CCFBF1] text-[#0F766E] border border-[#99F6E4]">AI Buddy</span>
+          </div>
+          <p class="text-[11px] text-[#5E5278] font-medium">3D Modeling, Vision &amp; Print Helper</p>
+        </div>
+      </div>
+      <button id="btn-close-axel" type="button" title="Collapse Axel Panel" class="p-1.5 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#DDD4F0]/60 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Chat Messages -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-3.5 space-y-3 text-sm select-text bg-[#F4F0FA]/70">
+      <div class="flex items-start gap-2.5">
+        <div class="axel-avatar-slot w-8 h-8 rounded-lg overflow-hidden shrink-0 mt-0.5 shadow-xs"></div>
+        <div class="bg-[#FAF8FF] border border-[#DDD4F0] rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[#2A223D] leading-relaxed shadow-xs">
+          Hey! I'm <span class="text-[#0D9488] font-bold">Axel</span>, your 3D studio buddy. Ask me to build a custom STL, resize to exact millimeters, run Auto-Fix, or attach an image below to turn it into 3D!
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Chat Image Attachment Preview -->
+    <div id="chat-attachment-bar" class="hidden px-3 py-2 border-t border-[#DDD4F0] bg-[#EAE3F7] items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <img id="chat-attachment-thumb" class="w-9 h-9 rounded-lg object-cover border border-[#14B8A6]" alt="Attached image" />
+        <div class="truncate">
+          <div class="text-xs font-bold text-[#0F766E] truncate" id="chat-attachment-name">image.png</div>
+          <div class="text-[10px] text-[#5E5278]">Axel will inspect &amp; build in 3D</div>
+        </div>
+      </div>
+      <button id="btn-clear-chat-attachment" type="button" class="p-1 rounded-lg text-[#5E5278] hover:text-[#2A223D] hover:bg-[#DDD4F0] text-xs font-bold">✕</button>
+    </div>
+
+    <!-- Quick-Action Starter Chips -->
+    <div class="px-3 py-2 border-t border-[#DDD4F0] bg-[#FAF8FF] flex gap-1.5 overflow-x-auto no-scrollbar">
+      <button type="button" class="chip-btn shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-[#EAE3F7] hover:bg-[#0D9488] text-[#2A223D] hover:text-white border border-[#DDD4F0] hover:border-transparent transition" data-prompt="Build a phone stand">📱 Build a phone stand</button>
+      <button type="button" class="chip-btn shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-[#EAE3F7] hover:bg-[#0D9488] text-[#2A223D] hover:text-white border border-[#DDD4F0] hover:border-transparent transition" data-prompt="Make a 70mm coaster">⚙️ Make a 70mm coaster</button>
+      <button type="button" class="chip-btn shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-[#EAE3F7] hover:bg-[#0D9488] text-[#2A223D] hover:text-white border border-[#DDD4F0] hover:border-transparent transition" data-prompt="Scale to 100mm wide">📏 Scale to 100mm wide</button>
+      <button type="button" class="chip-btn shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-[#CCFBF1] hover:bg-[#0D9488] text-[#0F766E] hover:text-white border border-[#99F6E4] transition" data-prompt="Auto-Fix my print">✨ Auto-Fix my print</button>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="chat-form" class="p-3 border-t border-[#DDD4F0] bg-[#EAE3F7]/90 flex items-center gap-2">
+      <button id="btn-chat-upload-img" type="button" title="Attach Image for Axel Vision 3D" class="p-2.5 rounded-xl bg-[#FAF8FF] hover:bg-[#F0FDFA] text-[#5E5278] hover:text-[#0D9488] border border-[#DDD4F0] hover:border-[#14B8A6] transition shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 15l-5-5L5 21" />
+        </svg>
+      </button>
+      <input id="chat-input" type="text" autocomplete="off" placeholder="Ask Axel to build or edit..." class="flex-1 bg-[#FFFFFF] border border-[#DDD4F0] focus:border-[#14B8A6] focus:outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#2A223D] placeholder-[#8E81A8] transition min-w-0" />
+      <button id="chat-send" type="submit" class="p-2.5 rounded-xl btn-teal font-semibold transition disabled:opacity-40 shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        </svg>
+      </button>
+    </form>
+  </aside>
+
+  <!-- ====================================================================== -->
+  <!-- MODAL 1: IMAGE -> 3D OBJECT CONVERTER                                  -->
+  <!-- ====================================================================== -->
+  <div id="img3d-modal" class="studio-modal fixed inset-0 z-50 items-center justify-center bg-[#2A223D]/45 backdrop-blur-md p-3 sm:p-6">
+    <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden bg-[#F4F0FA]">
+      <div class="px-5 py-4 border-b border-[#DDD4F0] flex items-center justify-between bg-[#EAE3F7]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl btn-teal flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 15l-5-5L5 21" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-extrabold text-[#2A223D]">Image → 3D Object Converter</h2>
+            <p class="text-xs text-[#5E5278]">Convert PNG/JPG/WebP into a watertight 3D relief, keychain/stamp, or Axel Vision 3D model</p>
+          </div>
+        </div>
+        <button id="btn-close-img3d" type="button" class="p-2 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#DDD4F0]/60 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Left: Upload, Samples & Side-by-Side Preview -->
+        <div class="lg:col-span-6 space-y-4">
+          <button id="img3d-dropzone" type="button" class="w-full rounded-2xl border-2 border-dashed border-[#B9A3E3] hover:border-[#14B8A6] bg-[#FAF8FF] p-4 text-left cursor-pointer transition flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#EAE3F7] text-[#0D9488] flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-[#2A223D]">Upload Image (PNG, JPG, WebP)</div>
+              <div class="text-xs text-[#5E5278]">Click to choose a file or drag &amp; drop onto viewport</div>
+            </div>
+          </button>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#5E5278]">1-Click Samples:</span>
+            <button id="btn-sample-star" type="button" class="px-3 py-1.5 rounded-xl bg-[#FAF8FF] hover:bg-[#CCFBF1] border border-[#DDD4F0] hover:border-[#14B8A6] text-xs font-semibold text-[#2A223D] transition">
+              ⭐ Star Emblem
+            </button>
+            <button id="btn-sample-mountain" type="button" class="px-3 py-1.5 rounded-xl bg-[#FAF8FF] hover:bg-[#CCFBF1] border border-[#DDD4F0] hover:border-[#14B8A6] text-xs font-semibold text-[#2A223D] transition">
+              🏔️ Mountain Badge
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="elevated-card rounded-2xl p-2.5 flex flex-col">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-bold text-[#2A223D]">Original Image</span>
+                <span id="img3d-res-badge" class="text-[10px] font-mono text-[#5E5278]">--</span>
+              </div>
+              <div class="aspect-square rounded-xl bg-[#EAE3F7] overflow-hidden flex items-center justify-center border border-[#DDD4F0]">
+                <canvas id="img3d-preview-orig" class="max-w-full max-h-full object-contain"></canvas>
+              </div>
+            </div>
+
+            <div class="elevated-card rounded-2xl p-2.5 flex flex-col">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-bold text-[#0D9488]">Grayscale Depth Map</span>
+                <span class="text-[10px] font-mono text-[#5E5278]">White = High</span>
+              </div>
+              <div class="aspect-square rounded-xl bg-[#1E2430] overflow-hidden flex items-center justify-center border border-[#DDD4F0]">
+                <canvas id="img3d-preview-depth" class="max-w-full max-h-full object-contain"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: 3 Modes & Sliders -->
+        <div class="lg:col-span-6 flex flex-col justify-between gap-4">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-[#5E5278] mb-2">Conversion Mode</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button data-img-mode="relief" type="button" class="img-mode-btn p-2.5 rounded-2xl border-2 border-[#14B8A6] bg-[#F0FDFA] text-left transition">
+                  <div class="text-xs font-bold text-[#0F766E]">3D Relief</div>
+                  <div class="text-[10px] text-[#5E5278] mt-0.5">Lithophane / Height</div>
+                </button>
+                <button data-img-mode="logo" type="button" class="img-mode-btn p-2.5 rounded-2xl border border-[#DDD4F0] bg-[#FAF8FF] text-left hover:border-[#14B8A6] transition">
+                  <div class="text-xs font-bold text-[#2A223D]">Logo / Stamp</div>
+                  <div class="text-[10px] text-[#5E5278] mt-0.5">Keychain &amp; Cutout</div>
+                </button>
+                <button data-img-mode="vision" type="button" class="img-mode-btn p-2.5 rounded-2xl border border-[#DDD4F0] bg-[#FAF8FF] text-left hover:border-[#14B8A6] transition">
+                  <div class="text-xs font-bold text-[#2A223D]">Axel AI</div>
+                  <div class="text-[10px] text-[#5E5278] mt-0.5">Vision 3D Builder</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Relief & Logo Controls -->
+            <div id="img3d-mesh-controls" class="space-y-3 elevated-card rounded-2xl p-4">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[#2A223D] font-semibold">Width</span>
+                  <span class="font-mono font-bold text-[#0D9488]"><span id="val-img-width">100</span> mm</span>
+                </div>
+                <input id="ctrl-img-width" type="range" min="40" max="200" step="2" value="100" class="w-full" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[#2A223D] font-semibold">Relief / Extrusion Depth</span>
+                  <span class="font-mono font-bold text-[#0D9488]"><span id="val-img-height">5.0</span> mm</span>
+                </div>
+                <input id="ctrl-img-height" type="range" min="1" max="15" step="0.5" value="5" class="w-full" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[#2A223D] font-semibold">Base Thickness</span>
+                  <span class="font-mono font-bold text-[#0D9488]"><span id="val-img-base">2.0</span> mm</span>
+                </div>
+                <input id="ctrl-img-base" type="range" min="0.8" max="5" step="0.2" value="2.0" class="w-full" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label class="block text-xs text-[#2A223D] font-semibold mb-1">Detail Resolution</label>
+                  <select id="ctrl-img-detail" class="w-full bg-[#FFFFFF] border border-[#DDD4F0] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-[#2A223D] focus:outline-none focus:border-[#14B8A6]">
+                    <option value="64">Fast (64×64)</option>
+                    <option value="100" selected>Balanced (100×100)</option>
+                    <option value="140">High Detail (140×140)</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span class="text-[#2A223D] font-semibold">Smoothing</span>
+                    <span class="font-mono font-bold text-[#0D9488]" id="val-img-smooth">1</span>
+                  </div>
+                  <input id="ctrl-img-smooth" type="range" min="0" max="3" step="1" value="1" class="w-full mt-1.5" />
+                </div>
+              </div>
+
+              <!-- Logo / Keychain Extras -->
+              <div id="img3d-logo-extras" class="hidden space-y-2.5 pt-2 border-t border-[#DDD4F0]">
+                <div>
+                  <div class="flex justify-between text-xs mb-1">
+                    <span class="text-[#2A223D] font-semibold">Cutout Threshold</span>
+                    <span class="font-mono font-bold text-[#0D9488]" id="val-img-thresh">128</span>
+                  </div>
+                  <input id="ctrl-img-thresh" type="range" min="20" max="235" step="5" value="128" class="w-full" />
+                </div>
+                <div class="flex flex-wrap gap-4 pt-1">
+                  <label class="flex items-center gap-2 text-xs font-semibold text-[#2A223D] cursor-pointer">
+                    <input id="ctrl-logo-baseplate" type="checkbox" checked class="rounded accent-[#0D9488] w-4 h-4" />
+                    <span>Include Baseplate</span>
+                  </label>
+                  <label class="flex items-center gap-2 text-xs font-semibold text-[#2A223D] cursor-pointer">
+                    <input id="ctrl-logo-keychain" type="checkbox" checked class="rounded accent-[#0D9488] w-4 h-4" />
+                    <span>Keychain Ring Loop</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="pt-1 flex items-center justify-between">
+                <label class="flex items-center gap-2 text-xs font-semibold text-[#2A223D] cursor-pointer">
+                  <input id="ctrl-img-invert" type="checkbox" class="rounded accent-[#0D9488] w-4 h-4" />
+                  <span>Invert Height</span>
+                </label>
+                <span class="text-[10px] font-mono font-bold text-[#0F766E] bg-[#CCFBF1] px-2 py-0.5 rounded-md">Watertight Mesh</span>
+              </div>
+            </div>
+
+            <!-- Axel Vision 3D Builder Panel -->
+            <div id="img3d-vision-controls" class="hidden space-y-3 elevated-card rounded-2xl p-4">
+              <div class="flex items-start gap-2.5">
+                <div class="axel-avatar-slot w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-xs"></div>
+                <p class="text-xs text-[#2A223D] leading-relaxed">
+                  <strong>Axel AI Vision 3D Builder:</strong> Axel analyzes your uploaded image and constructs an editable multi-part 3D model directly on the build plate!
+                </p>
+              </div>
+              <div>
+                <label class="block text-xs text-[#5E5278] font-semibold mb-1">Optional instruction for Axel</label>
+                <input id="ctrl-vision-prompt" type="text" placeholder="e.g., Make it a desk figurine about 85mm tall" class="w-full bg-[#FFFFFF] border border-[#DDD4F0] rounded-xl px-3 py-2 text-xs text-[#2A223D] placeholder-[#8E81A8] focus:outline-none focus:border-[#14B8A6]" />
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-convert-img3d" type="button" class="w-full py-3 rounded-2xl btn-teal font-bold text-sm flex items-center justify-center gap-2 transition disabled:opacity-50">
+            <span id="btn-convert-label">Convert &amp; Place on Bed</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- MODAL 2: VISUAL MAKERWORLD BROWSER                                     -->
+  <!-- ====================================================================== -->
+  <div id="makerworld-modal" class="studio-modal fixed inset-0 z-50 items-center justify-center bg-[#2A223D]/45 backdrop-blur-md p-3 sm:p-6">
+    <div class="glass-panel rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden bg-[#F4F0FA]">
+      <div class="px-5 py-4 border-b border-[#DDD4F0] flex items-center justify-between bg-[#EAE3F7]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-[#FAF8FF] text-[#0D9488] border border-[#DDD4F0] flex items-center justify-center shadow-xs shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-extrabold text-[#2A223D]">MakerWorld Visual Model Browser</h2>
+            <p class="text-xs text-[#5E5278]">Live 3D-rendered starter models, direct MakerWorld.com search &amp; instant file import</p>
+          </div>
+        </div>
+        <button id="btn-close-mw" type="button" class="p-2 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#DDD4F0]/60 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Search + Reliable Standard Anchor Link to MakerWorld.com -->
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 text-[#5E5278] absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input id="mw-search-input" type="text" placeholder="Filter 3D catalog or type a keyword for MakerWorld.com..." class="w-full bg-[#FFFFFF] border border-[#DDD4F0] focus:border-[#14B8A6] focus:outline-none rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#2A223D] placeholder-[#8E81A8] transition" />
+          </div>
+          <a id="link-mw-live-search" href="https://makerworld.com/en/search/models?keyword=desk+organizer" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl btn-teal font-bold text-sm flex items-center justify-center gap-1.5 transition shrink-0 no-underline">
+            <span>Search on MakerWorld.com</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+
+        <!-- Quick Import Dropzone -->
+        <button id="modal-dropzone" type="button" class="w-full rounded-2xl border border-dashed border-[#B9A3E3] hover:border-[#14B8A6] bg-[#FAF8FF] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 cursor-pointer transition text-left">
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-xl bg-[#CCFBF1] text-[#0D9488] flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </span>
+            <div class="text-xs sm:text-sm text-[#2A223D]">
+              Downloaded a model from MakerWorld? <span class="text-[#0D9488] font-bold">Click to import .STL, .OBJ, .GLB, or .GLTF</span>
+            </div>
+          </div>
+          <span class="text-[11px] font-mono font-semibold text-[#5E5278] shrink-0">Direct Import</span>
+        </button>
+
+        <!-- Category Filter Pills -->
+        <div id="mw-category-pills" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+          <button data-cat="All" type="button" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0D9488] text-white transition shrink-0">All</button>
+          <button data-cat="Mascots" type="button" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#FAF8FF] text-[#5E5278] hover:text-[#2A223D] border border-[#DDD4F0] transition shrink-0">Mascots</button>
+          <button data-cat="Desk" type="button" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#FAF8FF] text-[#5E5278] hover:text-[#2A223D] border border-[#DDD4F0] transition shrink-0">Desk</button>
+          <button data-cat="Home" type="button" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#FAF8FF] text-[#5E5278] hover:text-[#2A223D] border border-[#DDD4F0] transition shrink-0">Home</button>
+          <button data-cat="Gadgets" type="button" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#FAF8FF] text-[#5E5278] hover:text-[#2A223D] border border-[#DDD4F0] transition shrink-0">Gadgets</button>
+        </div>
+
+        <!-- Visual 3D Model Cards Grid -->
+        <div id="starter-models-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- MODAL 3: SLICER-READY EXPORT MODAL                                     -->
+  <!-- ====================================================================== -->
+  <div id="export-modal" class="studio-modal fixed inset-0 z-50 items-center justify-center bg-[#2A223D]/45 backdrop-blur-md p-3 sm:p-6">
+    <div class="glass-panel rounded-3xl w-full max-w-md overflow-hidden bg-[#F4F0FA]">
+      <div class="px-5 py-4 border-b border-[#DDD4F0] flex items-center justify-between bg-[#EAE3F7]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl btn-teal flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-extrabold text-[#2A223D]">Export 3D Model</h2>
+            <p class="text-[11px] text-[#5E5278]">Ready for Bambu Studio, PrusaSlicer &amp; Cura</p>
+          </div>
+        </div>
+        <button id="btn-close-export" type="button" class="p-1.5 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#DDD4F0]/60 transition">✕</button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-[#2A223D] mb-1">Filename</label>
+          <input id="export-filename" type="text" value="axel-3d-model" class="w-full bg-[#FFFFFF] border border-[#DDD4F0] focus:border-[#14B8A6] focus:outline-none rounded-xl px-3 py-2 text-sm font-mono text-[#2A223D]" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#2A223D] mb-1.5">Format</label>
+          <div class="space-y-2">
+            <button data-export-fmt="stl" type="button" class="export-fmt-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl border-2 border-[#14B8A6] bg-[#F0FDFA] text-left transition">
+              <div>
+                <div class="text-sm font-bold text-[#0F766E]">Binary .STL (Z-Up)</div>
+                <div class="text-[11px] text-[#5E5278]">Best for 3D printing slicers</div>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-[#CCFBF1] text-[#0F766E]">RECOMMENDED</span>
+            </button>
+            <button data-export-fmt="obj" type="button" class="export-fmt-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-[#DDD4F0] bg-[#FAF8FF] hover:border-[#14B8A6] text-left transition">
+              <div>
+                <div class="text-sm font-bold text-[#2A223D]">Wavefront .OBJ</div>
+                <div class="text-[11px] text-[#5E5278]">Universal CAD &amp; Blender mesh</div>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-[#EAE3F7] text-[#5E5278]">MESH</span>
+            </button>
+            <button data-export-fmt="glb" type="button" class="export-fmt-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-[#DDD4F0] bg-[#FAF8FF] hover:border-[#14B8A6] text-left transition">
+              <div>
+                <div class="text-sm font-bold text-[#2A223D]">glTF Binary .GLB</div>
+                <div class="text-[11px] text-[#5E5278]">Web, AR &amp; full color materials</div>
+              </div>
+              <span class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-[#CCFBF1] text-[#0F766E]">COLOR</span>
+            </button>
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A223D] cursor-pointer">
+          <input id="export-all-bed" type="checkbox" class="rounded accent-[#0D9488] w-4 h-4" />
+          <span>Export entire build plate (all models)</span>
+        </label>
+
+        <button id="btn-confirm-export" type="button" class="w-full py-3 rounded-2xl btn-teal font-bold text-sm transition">
+          Download 3D File
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- MODAL 4: SETTINGS (OPTIONAL GEMINI API KEY FOR STANDALONE / APK)       -->
+  <!-- ====================================================================== -->
+  <div id="settings-modal" class="studio-modal fixed inset-0 z-50 items-center justify-center bg-[#2A223D]/45 backdrop-blur-md p-3 sm:p-6">
+    <div class="glass-panel rounded-3xl w-full max-w-md overflow-hidden bg-[#F4F0FA]">
+      <div class="px-5 py-4 border-b border-[#DDD4F0] flex items-center justify-between bg-[#EAE3F7]">
+        <div class="flex items-center gap-2.5">
+          <div class="axel-avatar-slot w-9 h-9 rounded-xl overflow-hidden shadow-xs shrink-0"></div>
+          <div>
+            <h2 class="text-base font-extrabold text-[#2A223D]">Axel Studio Settings</h2>
+            <p class="text-[11px] text-[#5E5278]">Standalone Chrome &amp; Android APK Configuration</p>
+          </div>
+        </div>
+        <button id="btn-close-settings" type="button" class="p-1.5 rounded-xl text-[#5E5278] hover:text-[#2A223D] hover:bg-[#DDD4F0]/60 transition">✕</button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="elevated-card rounded-2xl p-3.5 space-y-2">
+          <label class="block text-xs font-bold text-[#2A223D]">Optional Gemini API Key (For Standalone / APK)</label>
+          <input id="settings-api-key" type="password" placeholder="AIzaSy... (leave blank in Canvas preview)" class="w-full bg-[#FFFFFF] border border-[#DDD4F0] focus:border-[#14B8A6] focus:outline-none rounded-xl px-3 py-2 text-xs font-mono text-[#2A223D]" />
+          <p class="text-[11px] text-[#5E5278] leading-relaxed">
+            Leave blank when running inside Gemini Preview. When packaged as a standalone HTML file or Android APK, paste a free key from
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[#0D9488] font-bold underline">Google AI Studio</a>
+            so Axel's cloud AI &amp; Vision work everywhere. Local commands always work offline.
+          </p>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="btn-clear-api-key" type="button" class="px-4 py-2.5 rounded-xl bg-[#EAE3F7] hover:bg-[#DDD4F0] text-xs font-bold text-[#2A223D] transition">Clear</button>
+          <button id="btn-save-settings" type="button" class="flex-1 py-2.5 rounded-xl btn-teal text-sm font-bold transition">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- MAIN MODULE SCRIPT (THREE.JS v0.170.0 + FULL STUDIO ENGINE)            -->
+  <!-- ====================================================================== -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+    import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+    // =========================================================================
+    // 1. AXEL ROBOT MASCOT SVG & FAVICON
+    // =========================================================================
+    const AXEL_ROBOT_SVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class="w-full h-full">
+        <defs>
+          <linearGradient id="axBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#58616E"/>
+            <stop offset="100%" stop-color="#3B4350"/>
+          </linearGradient>
+          <linearGradient id="axMetal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#E2E8F0"/>
+            <stop offset="55%" stop-color="#B0BAC8"/>
+            <stop offset="100%" stop-color="#7B8696"/>
+          </linearGradient>
+          <linearGradient id="axVisor" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1E313B"/>
+            <stop offset="100%" stop-color="#0E1B22"/>
+          </linearGradient>
+          <radialGradient id="axEye" cx="45%" cy="40%" r="55%">
+            <stop offset="0%" stop-color="#CCFBF1"/>
+            <stop offset="55%" stop-color="#5EEAD4"/>
+            <stop offset="100%" stop-color="#14B8A6"/>
+          </radialGradient>
+          <filter id="axGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.4" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#axBg)" stroke="#2DD4BF" stroke-width="5.5" filter="url(#axGlow)"/>
+        <rect x="6" y="6" width="116" height="116" rx="28" fill="none" stroke="#99F6E4" stroke-width="1.5" opacity="0.85"/>
+
+        <!-- Sparkles & Binary Accents -->
+        <g fill="#5EEAD4" opacity="0.9">
+          <path d="M26 30 L28 35 L33 37 L28 39 L26 44 L24 39 L19 37 L24 35 Z"/>
+          <circle cx="20" cy="52" r="1.6"/>
+          <text x="16" y="79" font-family="monospace" font-size="9.5" font-weight="700" fill="#5EEAD4">11</text>
+          <text x="24" y="90" font-family="monospace" font-size="9.5" font-weight="700" fill="#99F6E4">0</text>
+          <circle cx="21" cy="96" r="2"/>
+          <text x="80" y="30" font-family="monospace" font-size="9.5" font-weight="700" fill="#5EEAD4">11</text>
+          <line x1="94" y1="36" x2="103" y2="41" stroke="#2DD4BF" stroke-width="1.4"/>
+          <line x1="94" y1="45" x2="103" y2="41" stroke="#2DD4BF" stroke-width="1.4"/>
+          <circle cx="94" cy="36" r="2.6"/>
+          <circle cx="103" cy="41" r="2.2"/>
+          <circle cx="94" cy="45" r="2.2"/>
+          <text x="103" y="59" font-family="monospace" font-size="9.5" font-weight="700" fill="#5EEAD4">0</text>
+          <text x="107" y="69" font-family="monospace" font-size="8.5" font-weight="700" fill="#2DD4BF">1</text>
+          <path d="M98 96 L99.8 100 L103.8 101.8 L99.8 103.6 L98 107.6 L96.2 103.6 L92.2 101.8 L96.2 100 Z"/>
+        </g>
+
+        <!-- Antenna + Signal Arcs -->
+        <g stroke="#5EEAD4" fill="none" stroke-linecap="round">
+          <path d="M53 18 A10 10 0 0 0 53 28" stroke-width="2.2" opacity="0.85"/>
+          <path d="M75 18 A10 10 0 0 1 75 28" stroke-width="2.2" opacity="0.85"/>
+          <path d="M49 15 A14 14 0 0 0 49 31" stroke-width="1.8" opacity="0.55"/>
+          <path d="M79 15 A14 14 0 0 1 79 31" stroke-width="1.8" opacity="0.55"/>
+        </g>
+        <line x1="64" y1="26" x2="64" y2="36" stroke="#2B3440" stroke-width="4.5" stroke-linecap="round"/>
+        <line x1="64" y1="26" x2="64" y2="36" stroke="#B8C2D0" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="64" cy="23" r="5" fill="url(#axEye)" stroke="#1F2937" stroke-width="1.5" filter="url(#axGlow)"/>
+        <circle cx="62.5" cy="21.5" r="1.5" fill="#FFFFFF"/>
+
+        <!-- Legs -->
+        <rect x="49" y="108" width="11" height="12" rx="4" fill="url(#axMetal)" stroke="#1F2937" stroke-width="2.2"/>
+        <rect x="68" y="108" width="11" height="12" rx="4" fill="url(#axMetal)" stroke="#1F2937" stroke-width="2.2"/>
+
+        <!-- Left Arm -->
+        <circle cx="41" cy="86" r="5" fill="#5EEAD4" stroke="#1F2937" stroke-width="2"/>
+        <path d="M38 89 C32 94, 30 101, 33 108 L40 106 C39 101, 41 96, 44 93 Z" fill="url(#axMetal)" stroke="#1F2937" stroke-width="2.2" stroke-linejoin="round"/>
+        <ellipse cx="34.5" cy="100" rx="2.2" ry="4" fill="#5EEAD4"/>
+
+        <!-- Right Waving Arm & Hand -->
+        <circle cx="87" cy="86" r="5" fill="#5EEAD4" stroke="#1F2937" stroke-width="2"/>
+        <path d="M89 87 C96 86, 102 81, 104 74 L97 71 C95 76, 92 79, 87 81 Z" fill="url(#axMetal)" stroke="#1F2937" stroke-width="2.2" stroke-linejoin="round"/>
+        <g fill="url(#axMetal)" stroke="#1F2937" stroke-width="1.9" stroke-linecap="round">
+          <circle cx="104" cy="70" r="6.2"/>
+          <line x1="99" y1="65" x2="97" y2="60" stroke-width="3.2"/>
+          <line x1="103" y1="63" x2="103" y2="57.5" stroke-width="3.2"/>
+          <line x1="107" y1="64" x2="109" y2="59" stroke-width="3.2"/>
+          <line x1="110" y1="68" x2="114" y2="65" stroke-width="3"/>
+        </g>
+
+        <!-- Body & Glowing Circuit Chest Emblem -->
+        <rect x="42" y="77" width="44" height="35" rx="16" fill="url(#axMetal)" stroke="#1F2937" stroke-width="2.6"/>
+        <path d="M53 84 H75 V96 C75 102, 64 106, 64 106 C64 106, 53 102, 53 96 Z" fill="#18343E" stroke="#5EEAD4" stroke-width="2"/>
+        <g stroke="#5EEAD4" stroke-width="1.7" fill="none" stroke-linecap="round">
+          <path d="M64 103 V91"/>
+          <path d="M58 99 V94 L61 91"/>
+          <path d="M70 99 V93 L67 90"/>
+          <circle cx="64" cy="89" r="1.7" fill="#5EEAD4"/>
+          <circle cx="58" cy="90" r="1.4" fill="#5EEAD4"/>
+          <circle cx="70" cy="89" r="1.4" fill="#5EEAD4"/>
+        </g>
+
+        <!-- Ear Pods & Head -->
+        <rect x="27" y="51" width="9" height="17" rx="4.5" fill="#2DD4BF" stroke="#1F2937" stroke-width="2.2"/>
+        <rect x="92" y="51" width="9" height="17" rx="4.5" fill="#2DD4BF" stroke="#1F2937" stroke-width="2.2"/>
+        <rect x="33" y="36" width="62" height="45" rx="20" fill="url(#axMetal)" stroke="#1F2937" stroke-width="2.8"/>
+        <path d="M45 41 H62" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" opacity="0.65"/>
+
+        <!-- Visor, Eyes & Smile -->
+        <rect x="41" y="44" width="46" height="30" rx="13" fill="url(#axVisor)" stroke="#334155" stroke-width="2"/>
+        <circle cx="53.5" cy="57.5" r="6.4" fill="url(#axEye)" filter="url(#axGlow)"/>
+        <circle cx="74.5" cy="57.5" r="6.4" fill="url(#axEye)" filter="url(#axGlow)"/>
+        <circle cx="51.4" cy="55.2" r="2.2" fill="#FFFFFF"/>
+        <circle cx="72.4" cy="55.2" r="2.2" fill="#FFFFFF"/>
+        <path d="M58.5 66 Q64 71 69.5 66" fill="none" stroke="#5EEAD4" stroke-width="2.8" stroke-linecap="round" filter="url(#axGlow)"/>
+      </svg>`;
+
+    function mountAxelAvatars() {
+      try {
+        document.querySelectorAll('.axel-avatar-slot').forEach((slot) => {
+          slot.innerHTML = AXEL_ROBOT_SVG;
+        });
+        const encoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(AXEL_ROBOT_SVG.trim());
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = encoded;
+      } catch (err) {
+        console.warn('Avatar mount warning:', err);
+      }
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & SAFE HELPERS
+    // =========================================================================
+    const MAX_HISTORY = 20;
+    const API_KEY_STORAGE = 'axel_studio_gemini_key';
+
+    const state = {
+      bedSize: 256,
+      models: [],
+      selected: null,
+      viewMode: 'solid',
+      activeTool: 'select',
+      lockAspect: true,
+      exportFormat: 'stl',
+      history: [],
+      future: [],
+      isAxelOpen: window.innerWidth >= 1024,
+      cameraGoal: null,
+      activeCategory: 'All',
+      thumbnailCache: {},
+      chatAttachment: null,
+      img3d: {
+        mode: 'relief',
+        imageEl: null,
+        dataUrl: null,
+        name: 'Graphic',
+      }
+    };
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showToast(message, type = 'info') {
+      try {
+        const containerEl = document.getElementById('toast-container');
+        if (!containerEl) return;
+        const styles = {
+          success: 'bg-[#FAF8FF]/95 border-[#14B8A6] text-[#0F766E]',
+          warn: 'bg-[#FFFBEB]/95 border-amber-400 text-amber-900',
+          error: 'bg-[#FFF1F2]/95 border-rose-400 text-rose-900',
+          info: 'bg-[#FAF8FF]/95 border-[#B9A3E3] text-[#2A223D]',
+        };
+        const toast = document.createElement('div');
+        toast.className = `glass-panel pointer-events-auto rounded-2xl px-4 py-3 text-xs sm:text-sm font-semibold border ${styles[type] || styles.info} transition-all duration-300`;
+        toast.textContent = message;
+        containerEl.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(8px)';
+          setTimeout(() => toast.remove(), 300);
+        }, 3600);
+      } catch (err) {
+        console.warn('Toast error:', err);
+      }
+    }
+
+    function showAutoCorrectReport(fixes) {
+      try {
+        const containerEl = document.getElementById('toast-container');
+        if (!containerEl) return;
+        const card = document.createElement('div');
+        card.className = 'glass-panel pointer-events-auto rounded-2xl p-4 border-2 border-[#14B8A6] bg-[#FAF8FF]/95 transition-all duration-300';
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-[#CCFBF1] text-[#0D9488] flex items-center justify-center text-xs font-bold">✨</span>
+              <span class="text-sm font-extrabold text-[#2A223D]">Auto-Correct Complete</span>
+            </div>
+            <button type="button" class="close-report-btn text-[#5E5278] hover:text-[#2A223D] text-xs font-bold px-1">✕</button>
+          </div>
+          <ul class="space-y-1 text-xs text-[#2A223D] font-medium">
+            ${fixes.map((f) => `<li class="flex items-center gap-1.5"><span class="text-[#0D9488] font-bold">✓</span><span>${escapeHtml(f)}</span></li>`).join('')}
+          </ul>`;
+        card.querySelector('.close-report-btn')?.addEventListener('click', () => card.remove());
+        containerEl.appendChild(card);
+        setTimeout(() => {
+          if (card.parentNode) {
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+          }
+        }, 5500);
+      } catch (err) {
+        console.warn('Report toast error:', err);
+      }
+    }
+
+    // =========================================================================
+    // 3. THREE.JS STUDIO ENGINE (v0.170.0 SAFE INITIALIZATION)
+    // =========================================================================
+    let scene, camera, renderer, orbit, transformControls;
+    let bedGroup = null;
+    let selectionBox = null;
+    let engineReady = false;
+
+    function initThreeEngine() {
+      try {
+        const container = document.getElementById('viewport-container');
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 2500);
+        camera.position.set(175, 148, 198);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.12;
+        container.appendChild(renderer.domElement);
+
+        orbit = new OrbitControls(camera, renderer.domElement);
+        orbit.enableDamping = true;
+        orbit.dampingFactor = 0.07;
+        orbit.maxPolarAngle = Math.PI / 2 - 0.02;
+        orbit.minDistance = 20;
+        orbit.maxDistance = 850;
+        orbit.target.set(0, 20, 0);
+
+        // CRITICAL Three.js r169/r170 FIX: Use transformControls.getHelper() when adding to scene
+        transformControls = new TransformControls(camera, renderer.domElement);
+        transformControls.setSize(0.88);
+        const tcHelper = typeof transformControls.getHelper === 'function'
+          ? transformControls.getHelper()
+          : transformControls;
+        scene.add(tcHelper);
+
+        let draggingStarted = false;
+        transformControls.addEventListener('dragging-changed', (event) => {
+          orbit.enabled = !event.value;
+          if (event.value) {
+            saveUndoSnapshot();
+            draggingStarted = true;
+          } else if (draggingStarted) {
+            draggingStarted = false;
+            updateSelectionHelper();
+            updateModelStats();
+          }
+        });
+        transformControls.addEventListener('objectChange', () => {
+          updateSelectionHelper();
+          updateModelStats();
+        });
+
+        // Studio Lights
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb9a3e3, 1.08);
+        hemiLight.position.set(0, 320, 0);
+        scene.add(hemiLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.45);
+        keyLight.position.set(150, 260, 150);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 2048;
+        keyLight.shadow.mapSize.height = 2048;
+        keyLight.shadow.camera.near = 20;
+        keyLight.shadow.camera.far = 850;
+        const ext = 195;
+        keyLight.shadow.camera.left = -ext;
+        keyLight.shadow.camera.right = ext;
+        keyLight.shadow.camera.top = ext;
+        keyLight.shadow.camera.bottom = -ext;
+        keyLight.shadow.bias = -0.0005;
+        scene.add(keyLight);
+
+        const tealRim = new THREE.DirectionalLight(0x5eead4, 0.58);
+        tealRim.position.set(-170, 130, -140);
+        scene.add(tealRim);
+
+        const fillLight = new THREE.DirectionalLight(0xe9d5ff, 0.45);
+        fillLight.position.set(140, 80, -170);
+        scene.add(fillLight);
+
+        rebuildBuildPlate(state.bedSize);
+        setupViewportRaycasting();
+        engineReady = true;
+      } catch (err) {
+        console.error('3D Engine initialization error:', err);
+        showToast('WebGL 3D engine could not start on this device.', 'error');
+      }
+    }
+
+    function rebuildBuildPlate(sizeMm) {
+      if (!scene) return;
+      try {
+        state.bedSize = sizeMm;
+        if (bedGroup) scene.remove(bedGroup);
+        bedGroup = new THREE.Group();
+        bedGroup.name = '__BuildPlate__';
+
+        // Dark-slate PEI build plate
+        const plateMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(sizeMm, 4, sizeMm),
+          new THREE.MeshStandardMaterial({ color: 0x242a38, roughness: 0.72, metalness: 0.22 })
+        );
+        plateMesh.position.y = -2.02;
+        plateMesh.receiveShadow = true;
+        bedGroup.add(plateMesh);
+
+        // Chassis rim
+        const chassis = new THREE.Mesh(
+          new THREE.BoxGeometry(sizeMm + 6, 2.2, sizeMm + 6),
+          new THREE.MeshStandardMaterial({ color: 0x181d28, roughness: 0.65, metalness: 0.28 })
+        );
+        chassis.position.y = -4.2;
+        bedGroup.add(chassis);
+
+        // Teal perimeter outline
+        const borderLine = new THREE.LineSegments(
+          new THREE.EdgesGeometry(new THREE.BoxGeometry(sizeMm + 0.6, 4.1, sizeMm + 0.6)),
+          new THREE.LineBasicMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.85 })
+        );
+        borderLine.position.y = -2.02;
+        bedGroup.add(borderLine);
+
+        // Millimeter Grid + Ruler + FRONT Label Canvas Texture
+        const texSize = 1024;
+        const c = document.createElement('canvas');
+        c.width = texSize;
+        c.height = texSize;
+        const ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, texSize, texSize);
+
+        const pxPerMm = texSize / sizeMm;
+        for (let mm = 0; mm <= sizeMm; mm += 10) {
+          const p = mm * pxPerMm;
+          const isMajor = mm % 50 === 0 || Math.abs(mm - sizeMm / 2) < 0.1;
+          ctx.strokeStyle = isMajor ? 'rgba(94, 234, 212, 0.44)' : 'rgba(45, 212, 191, 0.16)';
+          ctx.lineWidth = isMajor ? 1.8 : 1;
+
+          ctx.beginPath();
+          ctx.moveTo(p, 0);
+          ctx.lineTo(p, texSize);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(0, p);
+          ctx.lineTo(texSize, p);
+          ctx.stroke();
+        }
+
+        // Center Crosshair
+        ctx.strokeStyle = 'rgba(94, 234, 212, 0.72)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(texSize / 2, 0);
+        ctx.lineTo(texSize / 2, texSize);
+        ctx.moveTo(0, texSize / 2);
+        ctx.lineTo(texSize, texSize / 2);
+        ctx.stroke();
+
+        // Ruler ticks
+        ctx.font = '600 17px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(153, 246, 228, 0.78)';
+        ctx.textAlign = 'center';
+        for (let mm = 20; mm < sizeMm; mm += 20) {
+          ctx.fillText(`${mm}`, mm * pxPerMm, texSize - 10);
+        }
+
+        // FRONT label
+        ctx.textAlign = 'center';
+        ctx.font = '700 22px "Plus Jakarta Sans", sans-serif';
+        ctx.fillStyle = 'rgba(204, 251, 241, 0.84)';
+        ctx.fillText(`▲  FRONT  •  AXEL ${sizeMm} × ${sizeMm} mm PEI PLATE  ▲`, texSize / 2, texSize - 38);
+
+        const gridTex = new THREE.CanvasTexture(c);
+        gridTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        const overlay = new THREE.Mesh(
+          new THREE.PlaneGeometry(sizeMm, sizeMm),
+          new THREE.MeshBasicMaterial({ map: gridTex, transparent: true, depthWrite: false })
+        );
+        overlay.rotation.x = -Math.PI / 2;
+        overlay.position.y = 0.03;
+        bedGroup.add(overlay);
+
+        scene.add(bedGroup);
+        updateModelStats();
+      } catch (err) {
+        console.error('Build plate rebuild error:', err);
+      }
+    }
+
+    function updateSelectionHelper() {
+      if (!scene) return;
+      if (selectionBox) {
+        scene.remove(selectionBox);
+        selectionBox.geometry?.dispose();
+        selectionBox.material?.dispose();
+        selectionBox = null;
+      }
+      if (state.selected && scene.children.includes(state.selected)) {
+        selectionBox = new THREE.BoxHelper(state.selected, 0x0d9488);
+        selectionBox.material.transparent = true;
+        selectionBox.material.opacity = 0.9;
+        scene.add(selectionBox);
+      }
+    }
+
+    function setupViewportRaycasting() {
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      let downPos = { x: 0, y: 0 };
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        downPos = { x: e.clientX, y: e.clientY };
+        state.cameraGoal = null;
+      });
+
+      renderer.domElement.addEventListener('pointerup', (e) => {
+        if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 5) return;
+        if (transformControls?.dragging) return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(state.models, true);
+        if (hits.length > 0) {
+          let root = hits[0].object;
+          while (root.parent && !state.models.includes(root)) root = root.parent;
+          if (state.models.includes(root)) selectModel(root);
+        } else {
+          selectModel(null);
+        }
+      });
+    }
+
+    // =========================================================================
+    // 4. MATERIALS, GEOMETRY STATS & SCENE MANAGEMENT
+    // =========================================================================
+    function createStudioMaterial(hexColor = '#14B8A6') {
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: 0.36,
+        metalness: 0.12,
+        side: THREE.DoubleSide,
+      });
+      applyViewModeToMaterial(mat, state.viewMode);
+      return mat;
+    }
+
+    function applyViewModeToMaterial(mat, mode) {
+      if (!mat) return;
+      if (mode === 'wireframe') {
+        mat.wireframe = true;
+        mat.transparent = false;
+        mat.opacity = 1;
+      } else if (mode === 'xray') {
+        mat.wireframe = false;
+        mat.transparent = true;
+        mat.opacity = 0.35;
+      } else {
+        mat.wireframe = false;
+        mat.transparent = false;
+        mat.opacity = 1;
+      }
+      mat.needsUpdate = true;
+    }
+
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      const labels = { solid: 'Solid', wireframe: 'Wire', xray: 'X-Ray' };
+      const el = document.getElementById('view-mode-label');
+      if (el) el.textContent = labels[mode] || 'Solid';
+      state.models.forEach((group) => {
+        group.traverse((child) => {
+          if (child.isMesh) {
+            if (Array.isArray(child.material)) child.material.forEach((m) => applyViewModeToMaterial(m, mode));
+            else applyViewModeToMaterial(child.material, mode);
+          }
+        });
+      });
+    }
+
+    function getWorldBox(obj) {
+      obj.updateMatrixWorld(true);
+      return new THREE.Box3().setFromObject(obj);
+    }
+
+    function snapGroupFlatToBed(group) {
+      const box = getWorldBox(group);
+      if (!box.isEmpty()) {
+        group.position.y -= box.min.y;
+        group.updateMatrixWorld(true);
+      }
+    }
+
+    function centerGroupOnBed(group) {
+      const box = getWorldBox(group);
+      if (!box.isEmpty()) {
+        const center = box.getCenter(new THREE.Vector3());
+        group.position.x -= center.x;
+        group.position.z -= center.z;
+        group.updateMatrixWorld(true);
+      }
+    }
+
+    function focusCameraOn(targetObj) {
+      if (!targetObj) {
+        state.cameraGoal = {
+          pos: new THREE.Vector3(175, 148, 198),
+          target: new THREE.Vector3(0, 20, 0),
+        };
+        return;
+      }
+      const box = getWorldBox(targetObj);
+      if (box.isEmpty()) return;
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z, 35);
+      const dist = maxDim * 2.1;
+      state.cameraGoal = {
+        pos: new THREE.Vector3(center.x + dist * 0.72, center.y + dist * 0.60, center.z + dist * 0.82),
+        target: center.clone(),
+      };
+    }
+
+    function addModelToScene(group, { select = true, focus = true, recordUndo = true } = {}) {
+      if (!scene || !group) return null;
+      if (recordUndo) saveUndoSnapshot();
+
+      group.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (!child.material) {
+            child.material = createStudioMaterial('#14B8A6');
+          } else if (Array.isArray(child.material)) {
+            child.material.forEach((m) => applyViewModeToMaterial(m, state.viewMode));
+          } else {
+            applyViewModeToMaterial(child.material, state.viewMode);
+          }
+        }
+      });
+
+      scene.add(group);
+      state.models.push(group);
+      if (select) selectModel(group);
+      if (focus) focusCameraOn(group);
+      updateModelStats();
+      return group;
+    }
+
+    function selectModel(group) {
+      state.selected = group;
+      if (transformControls) {
+        if (group && state.activeTool !== 'select') {
+          transformControls.attach(group);
+          transformControls.setMode(state.activeTool);
+        } else {
+          transformControls.detach();
+        }
+      }
+      updateSelectionHelper();
+      updateModelStats();
+    }
+
+    function setActiveTool(tool) {
+      state.activeTool = tool;
+      document.querySelectorAll('.tool-btn').forEach((btn) => {
+        const active = btn.dataset.tool === tool;
+        btn.classList.toggle('bg-[#0D9488]', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-[#5E5278]', !active);
+      });
+      if (!transformControls) return;
+      if (tool === 'select' || !state.selected) {
+        transformControls.detach();
+      } else {
+        transformControls.attach(state.selected);
+        transformControls.setMode(tool);
+      }
+    }
+
+    function countTriangles(obj) {
+      let tris = 0;
+      obj.traverse((child) => {
+        if (child.isMesh && child.geometry) {
+          const geo = child.geometry;
+          if (geo.index) tris += geo.index.count / 3;
+          else if (geo.attributes.position) tris += geo.attributes.position.count / 3;
+        }
+      });
+      return Math.round(tris);
+    }
+
+    function estimateVolumeCm3(obj) {
+      obj.updateMatrixWorld(true);
+      let volMm3 = 0;
+      const p1 = new THREE.Vector3();
+      const p2 = new THREE.Vector3();
+      const p3 = new THREE.Vector3();
+      const cross = new THREE.Vector3();
+
+      obj.traverse((child) => {
+        if (!child.isMesh || !child.geometry?.attributes?.position) return;
+        const pos = child.geometry.attributes.position;
+        const idx = child.geometry.index;
+        const mat = child.matrixWorld;
+        let meshVol = 0;
+        if (idx) {
+          for (let i = 0; i < idx.count; i += 3) {
+            p1.fromBufferAttribute(pos, idx.getX(i)).applyMatrix4(mat);
+            p2.fromBufferAttribute(pos, idx.getX(i + 1)).applyMatrix4(mat);
+            p3.fromBufferAttribute(pos, idx.getX(i + 2)).applyMatrix4(mat);
+            cross.crossVectors(p2, p3);
+            meshVol += p1.dot(cross) / 6.0;
+          }
+        } else {
+          for (let i = 0; i < pos.count; i += 3) {
+            p1.fromBufferAttribute(pos, i).applyMatrix4(mat);
+            p2.fromBufferAttribute(pos, i + 1).applyMatrix4(mat);
+            p3.fromBufferAttribute(pos, i + 2).applyMatrix4(mat);
+            cross.crossVectors(p2, p3);
+            meshVol += p1.dot(cross) / 6.0;
+          }
+        }
+        volMm3 += Math.abs(meshVol);
+      });
+      return volMm3 / 1000;
+    }
+
+    function updateModelStats() {
+      const dimX = document.getElementById('dim-x');
+      const dimZ = document.getElementById('dim-z');
+      const dimY = document.getElementById('dim-y');
+      const statusBadge = document.getElementById('stat-status-badge');
+      const statusDot = document.getElementById('stat-status-dot');
+      const statusText = document.getElementById('stat-status-text');
+      const trisEl = document.getElementById('stat-tris');
+      const volEl = document.getElementById('stat-volume');
+      const nameEl = document.getElementById('stat-name');
+
+      const target = state.selected || (state.models.length > 0 ? state.models[0] : null);
+      if (!target) {
+        dimX.value = '0';
+        dimZ.value = '0';
+        dimY.value = '0';
+        trisEl.textContent = '0';
+        volEl.textContent = '0.0';
+        nameEl.textContent = 'Empty Bed';
+        statusBadge.className = 'flex items-center gap-1.5 px-2 py-1 rounded-xl bg-[#EAE3F7] border border-[#DDD4F0]';
+        statusDot.className = 'w-2 h-2 rounded-full bg-[#5E5278]';
+        statusText.className = 'font-bold text-[#5E5278]';
+        statusText.textContent = 'Bed Empty';
+        return;
+      }
+
+      const box = getWorldBox(target);
+      const size = box.getSize(new THREE.Vector3());
+      const tris = countTriangles(target);
+      const vol = estimateVolumeCm3(target);
+
+      if (document.activeElement !== dimX) dimX.value = size.x.toFixed(1);
+      if (document.activeElement !== dimZ) dimZ.value = size.z.toFixed(1);
+      if (document.activeElement !== dimY) dimY.value = size.y.toFixed(1);
+      trisEl.textContent = tris.toLocaleString();
+      volEl.textContent = vol < 100 ? vol.toFixed(1) : Math.round(vol).toLocaleString();
+      nameEl.textContent = target.name || '3D Model';
+
+      const halfBed = state.bedSize / 2;
+      const oversized =
+        size.x > state.bedSize + 0.5 ||
+        size.z > state.bedSize + 0.5 ||
+        size.y > state.bedSize + 0.5 ||
+        box.min.x < -halfBed - 0.5 ||
+        box.max.x > halfBed + 0.5 ||
+        box.min.z < -halfBed - 0.5 ||
+        box.max.z > halfBed + 0.5;
+      const floating = Math.abs(box.min.y) > 0.35;
+
+      if (oversized) {
+        statusBadge.className = 'flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-100 border border-amber-300';
+        statusDot.className = 'w-2 h-2 rounded-full bg-amber-500 pulse-soft';
+        statusText.className = 'font-bold text-amber-800';
+        statusText.textContent = 'Oversized';
+      } else if (floating) {
+        statusBadge.className = 'flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-100 border border-amber-300';
+        statusDot.className = 'w-2 h-2 rounded-full bg-amber-500 pulse-soft';
+        statusText.className = 'font-bold text-amber-800';
+        statusText.textContent = 'Floating';
+      } else {
+        statusBadge.className = 'flex items-center gap-1.5 px-2 py-1 rounded-xl bg-emerald-100 border border-emerald-300';
+        statusDot.className = 'w-2 h-2 rounded-full bg-emerald-600';
+        statusText.className = 'font-bold text-emerald-800';
+        statusText.textContent = 'Fits Bed';
+      }
+    }
+
+    function applyNumericDimension(axis, newValMm) {
+      const target = state.selected || state.models[0];
+      if (!target || !Number.isFinite(newValMm) || newValMm <= 0.5) return;
+      const box = getWorldBox(target);
+      const size = box.getSize(new THREE.Vector3());
+      const currentVal = size[axis];
+      if (currentVal <= 0.001) return;
+
+      saveUndoSnapshot();
+      const ratio = newValMm / currentVal;
+      if (state.lockAspect) {
+        target.scale.multiplyScalar(ratio);
+      } else {
+        target.scale[axis] *= ratio;
+      }
+      snapGroupFlatToBed(target);
+      updateSelectionHelper();
+      updateModelStats();
+    }
+
+    // =========================================================================
+    // 5. UNDO / REDO HISTORY
+    // =========================================================================
+    function cloneModelList(list) {
+      return list.map((g) => g.clone(true));
+    }
+
+    function saveUndoSnapshot() {
+      state.history.push(cloneModelList(state.models));
+      if (state.history.length > MAX_HISTORY) state.history.shift();
+      state.future = [];
+      updateUndoRedoButtons();
+    }
+
+    function restoreSnapshot(snapshot) {
+      if (transformControls) transformControls.detach();
+      state.models.forEach((m) => scene.remove(m));
+      state.models = cloneModelList(snapshot);
+      state.models.forEach((m) => scene.add(m));
+      selectModel(state.models[state.models.length - 1] || null);
+      updateUndoRedoButtons();
+    }
+
+    function undo() {
+      if (state.history.length === 0) return;
+      state.future.push(cloneModelList(state.models));
+      restoreSnapshot(state.history.pop());
+      showToast('Undo applied', 'info');
+    }
+
+    function redo() {
+      if (state.future.length === 0) return;
+      state.history.push(cloneModelList(state.models));
+      restoreSnapshot(state.future.pop());
+      showToast('Redo applied', 'info');
+    }
+
+    function updateUndoRedoButtons() {
+      const u = document.getElementById('btn-undo');
+      const r = document.getElementById('btn-redo');
+      if (u) u.disabled = state.history.length === 0;
+      if (r) r.disabled = state.future.length === 0;
+    }
+
+    // =========================================================================
+    // 6. 1-CLICK AUTO-CORRECT MAGIC WAND
+    // =========================================================================
+    function runAutoCorrect(targetOverride = null) {
+      try {
+        const targets = targetOverride
+          ? [targetOverride]
+          : state.selected
+          ? [state.selected]
+          : [...state.models];
+
+        if (targets.length === 0) {
+          showToast('Add or import a model first to run Auto-Correct.', 'warn');
+          return;
+        }
+
+        saveUndoSnapshot();
+        const fixes = [];
+
+        targets.forEach((group) => {
+          let fixedNaN = 0;
+          let recomputed = false;
+
+          group.traverse((child) => {
+            if (child.isMesh && child.geometry) {
+              const pos = child.geometry.attributes.position;
+              if (pos) {
+                for (let i = 0; i < pos.count; i++) {
+                  const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+                  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+                    pos.setXYZ(i, Number.isFinite(x) ? x : 0, Number.isFinite(y) ? y : 0, Number.isFinite(z) ? z : 0);
+                    fixedNaN++;
+                  }
+                }
+                if (fixedNaN > 0) pos.needsUpdate = true;
+              }
+              child.geometry.computeVertexNormals();
+              child.geometry.computeBoundingBox();
+              recomputed = true;
+            }
+          });
+
+          if (fixedNaN > 0) fixes.push(`Cleaned ${fixedNaN} NaN/invalid vertices`);
+          if (recomputed) fixes.push('Recomputed smooth vertex normals');
+
+          const box = getWorldBox(group);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const safeFit = state.bedSize - 16;
+
+          if (maxDim > 0 && maxDim < 5) {
+            const factor = 60 / maxDim;
+            group.scale.multiplyScalar(factor);
+            group.updateMatrixWorld(true);
+            fixes.push(`Scaled microscopic model up to 60mm (×${factor.toFixed(1)})`);
+          } else if (maxDim > state.bedSize - 4) {
+            const factor = safeFit / maxDim;
+            group.scale.multiplyScalar(factor);
+            group.updateMatrixWorld(true);
+            fixes.push(`Scaled oversized model to fit ${state.bedSize}×${state.bedSize}mm bed`);
+          } else {
+            fixes.push(`Verified footprint fits ${state.bedSize}×${state.bedSize}mm bed`);
+          }
+
+          snapGroupFlatToBed(group);
+          fixes.push('Snapped bottom strictly to Y = 0.0mm');
+
+          centerGroupOnBed(group);
+          fixes.push('Centered X & Z on build plate');
+        });
+
+        updateSelectionHelper();
+        updateModelStats();
+        focusCameraOn(targets[0]);
+        showAutoCorrectReport([...new Set(fixes)]);
+      } catch (err) {
+        console.error('Auto-Correct error:', err);
+        showToast('Auto-Correct encountered an issue.', 'error');
+      }
+    }
+
+    // =========================================================================
+    // 7. PROCEDURAL 3D BUILDER & 8 MAKERWORLD STARTER MODELS
+    // =========================================================================
+    function buildModelFromParts(name, parts, defaultColor = '#14B8A6') {
+      const group = new THREE.Group();
+      group.name = name || 'Axel Model';
+
+      parts.forEach((p, idx) => {
+        let geo;
+        const shape = (p.shape || 'box').toLowerCase();
+        if (shape === 'cylinder') {
+          const rTop = p.radiusTop ?? p.radius ?? (p.width ? p.width / 2 : 15);
+          const rBot = p.radiusBottom ?? p.radius ?? (p.width ? p.width / 2 : 15);
+          geo = new THREE.CylinderGeometry(rTop, rBot, p.height ?? 30, p.segments ?? 32);
+        } else if (shape === 'sphere') {
+          geo = new THREE.SphereGeometry(p.radius ?? (p.width ? p.width / 2 : 20), 28, 20);
+        } else if (shape === 'cone') {
+          geo = new THREE.ConeGeometry(p.radius ?? (p.width ? p.width / 2 : 20), p.height ?? 40, 32);
+        } else if (shape === 'torus') {
+          geo = new THREE.TorusGeometry(p.radius ?? 20, p.tube ?? 5, 18, 44);
+        } else {
+          geo = new THREE.BoxGeometry(p.width ?? 30, p.height ?? 30, p.depth ?? 30);
+        }
+
+        const mesh = new THREE.Mesh(geo, createStudioMaterial(p.color || defaultColor));
+        mesh.name = `${name}_part_${idx}`;
+        mesh.position.set(p.x ?? 0, p.y ?? 0, p.z ?? 0);
+        mesh.rotation.set(
+          THREE.MathUtils.degToRad(p.rx ?? 0),
+          THREE.MathUtils.degToRad(p.ry ?? 0),
+          THREE.MathUtils.degToRad(p.rz ?? 0)
+        );
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+      });
+
+      snapGroupFlatToBed(group);
+      centerGroupOnBed(group);
+      return group;
+    }
+
+    function addPrimitive(type) {
+      let group;
+      if (type === 'box') {
+        group = buildModelFromParts('Cube 40mm', [{ shape: 'box', width: 40, height: 40, depth: 40, color: '#14B8A6' }]);
+      } else if (type === 'cylinder') {
+        group = buildModelFromParts('Cylinder 40mm', [{ shape: 'cylinder', radius: 20, height: 45, color: '#0D9488' }]);
+      } else if (type === 'sphere') {
+        group = buildModelFromParts('Sphere 40mm', [{ shape: 'sphere', radius: 20, color: '#8B5CF6' }]);
+      } else if (type === 'cone') {
+        group = buildModelFromParts('Cone 45mm', [{ shape: 'cone', radius: 22, height: 45, color: '#2DD4BF' }]);
+      } else if (type === 'torus') {
+        group = buildModelFromParts('Torus Ring', [{ shape: 'torus', radius: 22, tube: 6, rx: 90, color: '#7C3AED' }]);
+      } else if (type === 'keychain') {
+        group = STARTER_MODELS.find((m) => m.id === 'keychain-tag').build();
+      }
+      if (group) {
+        addModelToScene(group);
+        showToast(`Added ${group.name} to build plate`, 'success');
+      }
+    }
+
+    function add3DTextPlaque(rawText) {
+      const text = (rawText || 'AXEL').trim().slice(0, 14) || 'AXEL';
+      const c = document.createElement('canvas');
+      c.width = 320;
+      c.height = 110;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(8, 8, c.width - 16, c.height - 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `800 ${text.length > 8 ? 38 : 52}px "Plus Jakarta Sans", sans-serif`;
+      ctx.fillText(text, c.width / 2, c.height / 2 + 2);
+
+      const group = buildWatertightHeightmapMesh(c, {
+        widthMm: 100,
+        reliefMm: 4.5,
+        baseMm: 2.5,
+        detail: 100,
+        smoothPasses: 0,
+        invert: false,
+        mode: 'logo',
+        threshold: 120,
+        includeBaseplate: true,
+        addKeychainLoop: false,
+        name: `3D Text "${text}"`,
+        colorHex: '#14B8A6',
+      });
+      addModelToScene(group);
+      showToast(`Created 3D Text "${text}" on build plate!`, 'success');
+    }
+
+    // 8 Built-In Print-Ready Starter Models (Categories: Mascots, Desk, Home, Gadgets)
+    const STARTER_MODELS = [
+      {
+        id: 'axel-mascot',
+        name: 'Axel Mascot Figurine',
+        category: 'Mascots',
+        dims: '56 × 42 × 86 mm',
+        printTime: '~1h 45m',
+        build: () => buildModelFromParts('Axel Mascot Figurine', [
+          { shape: 'cylinder', radius: 24, height: 5, segments: 32, x: 0, y: 2.5, z: 0, color: '#475569' },
+          { shape: 'cylinder', radius: 5.5, height: 14, x: -8, y: 12, z: 0, color: '#94A3B8' },
+          { shape: 'cylinder', radius: 5.5, height: 14, x: 8, y: 12, z: 0, color: '#94A3B8' },
+          { shape: 'cylinder', radiusTop: 15, radiusBottom: 13, height: 26, x: 0, y: 31, z: 0, color: '#CBD5E1' },
+          { shape: 'box', width: 14, height: 13, depth: 6, x: 0, y: 32, z: 12.5, color: '#14B8A6' },
+          { shape: 'sphere', radius: 4.5, x: -17, y: 38, z: 0, color: '#2DD4BF' },
+          { shape: 'cylinder', radius: 3.6, height: 16, x: -19, y: 29, z: 0, rz: 10, color: '#94A3B8' },
+          { shape: 'sphere', radius: 4.5, x: 17, y: 38, z: 0, color: '#2DD4BF' },
+          { shape: 'cylinder', radius: 3.6, height: 16, x: 22, y: 45, z: 2, rz: -38, color: '#94A3B8' },
+          { shape: 'sphere', radius: 4.8, x: 27, y: 52, z: 3, color: '#CBD5E1' },
+          { shape: 'box', width: 34, height: 25, depth: 24, x: 0, y: 58, z: 0, color: '#CBD5E1' },
+          { shape: 'box', width: 26, height: 16, depth: 4, x: 0, y: 58, z: 11.5, color: '#1E293B' },
+          { shape: 'sphere', radius: 3.4, x: -6.5, y: 59, z: 13.4, color: '#5EEAD4' },
+          { shape: 'sphere', radius: 3.4, x: 6.5, y: 59, z: 13.4, color: '#5EEAD4' },
+          { shape: 'cylinder', radius: 5, height: 6, x: -19, y: 58, z: 0, rz: 90, color: '#14B8A6' },
+          { shape: 'cylinder', radius: 5, height: 6, x: 19, y: 58, z: 0, rz: 90, color: '#14B8A6' },
+          { shape: 'cylinder', radius: 1.8, height: 10, x: 0, y: 74, z: 0, color: '#94A3B8' },
+          { shape: 'sphere', radius: 4, x: 0, y: 80, z: 0, color: '#5EEAD4' },
+        ]),
+      },
+      {
+        id: 'phone-stand',
+        name: 'Adjustable Phone Stand',
+        category: 'Gadgets',
+        dims: '74 × 88 × 98 mm',
+        printTime: '~1h 50m',
+        build: () => buildModelFromParts('Adjustable Phone Stand', [
+          { shape: 'box', width: 74, height: 6, depth: 88, x: 0, y: 3, z: 0, color: '#14B8A6' },
+          { shape: 'box', width: 74, height: 96, depth: 7, x: 0, y: 47, z: -18, rx: -22, color: '#0D9488' },
+          { shape: 'box', width: 22, height: 14, depth: 6, x: -26, y: 10, z: 41, color: '#8B5CF6' },
+          { shape: 'box', width: 22, height: 14, depth: 6, x: 26, y: 10, z: 41, color: '#8B5CF6' },
+          { shape: 'box', width: 6, height: 46, depth: 38, x: -32, y: 26, z: -18, color: '#2DD4BF' },
+          { shape: 'box', width: 6, height: 46, depth: 38, x: 32, y: 26, z: -18, color: '#2DD4BF' },
+        ]),
+      },
+      {
+        id: 'hex-pen-cup',
+        name: 'Hex Desk Pen Cup',
+        category: 'Desk',
+        dims: '132 × 92 × 88 mm',
+        printTime: '~2h 30m',
+        build: () => buildModelFromParts('Hex Desk Pen Cup', [
+          { shape: 'cylinder', radius: 34, height: 88, segments: 6, x: -32, y: 44, z: -10, color: '#0D9488' },
+          { shape: 'cylinder', radius: 30, height: 64, segments: 6, x: 24, y: 32, z: -14, color: '#8B5CF6' },
+          { shape: 'cylinder', radius: 28, height: 42, segments: 6, x: 0, y: 21, z: 32, color: '#14B8A6' },
+          { shape: 'box', width: 126, height: 5, depth: 84, x: -4, y: 2.5, z: 6, color: '#6D28D9' },
+        ]),
+      },
+      {
+        id: 'cable-clip',
+        name: 'Snap Cable Clip',
+        category: 'Desk',
+        dims: '96 × 28 × 22 mm',
+        printTime: '~35m',
+        build: () => buildModelFromParts('Snap Cable Clip', [
+          { shape: 'box', width: 96, height: 6, depth: 28, x: 0, y: 3, z: 0, color: '#0D9488' },
+          { shape: 'box', width: 9, height: 16, depth: 24, x: -38, y: 13, z: 0, color: '#14B8A6' },
+          { shape: 'box', width: 9, height: 16, depth: 24, x: -13, y: 13, z: 0, color: '#8B5CF6' },
+          { shape: 'box', width: 9, height: 16, depth: 24, x: 13, y: 13, z: 0, color: '#14B8A6' },
+          { shape: 'box', width: 9, height: 16, depth: 24, x: 38, y: 13, z: 0, color: '#8B5CF6' },
+          { shape: 'cylinder', radius: 5.5, height: 24, x: -38, y: 20, z: 0, rx: 90, color: '#2DD4BF' },
+          { shape: 'cylinder', radius: 5.5, height: 24, x: -13, y: 20, z: 0, rx: 90, color: '#A78BFA' },
+          { shape: 'cylinder', radius: 5.5, height: 24, x: 13, y: 20, z: 0, rx: 90, color: '#2DD4BF' },
+          { shape: 'cylinder', radius: 5.5, height: 24, x: 38, y: 20, z: 0, rx: 90, color: '#A78BFA' },
+        ]),
+      },
+      {
+        id: 'gear-coaster',
+        name: 'Gear Coaster',
+        category: 'Home',
+        dims: '96 × 96 × 10 mm',
+        printTime: '~55m',
+        build: () => {
+          const parts = [
+            { shape: 'cylinder', radius: 40, height: 8, segments: 36, x: 0, y: 4, z: 0, color: '#0D9488' },
+            { shape: 'torus', radius: 36, tube: 3, x: 0, y: 7, z: 0, rx: 90, color: '#5EEAD4' },
+            { shape: 'cylinder', radius: 14, height: 9, segments: 24, x: 0, y: 4.5, z: 0, color: '#8B5CF6' },
+          ];
+          const teeth = 14;
+          for (let i = 0; i < teeth; i++) {
+            const a = (i / teeth) * Math.PI * 2;
+            parts.push({
+              shape: 'box',
+              width: 9,
+              height: 8,
+              depth: 10,
+              x: Math.cos(a) * 43,
+              y: 4,
+              z: Math.sin(a) * 43,
+              ry: -(a * 180) / Math.PI,
+              color: i % 2 === 0 ? '#14B8A6' : '#A78BFA',
+            });
+          }
+          return buildModelFromParts('Gear Coaster', parts);
+        },
+      },
+      {
+        id: 'parts-tray',
+        name: 'Stackable Parts Tray',
+        category: 'Desk',
+        dims: '120 × 84 × 24 mm',
+        printTime: '~1h 35m',
+        build: () => buildModelFromParts('Stackable Parts Tray', [
+          { shape: 'box', width: 120, height: 4, depth: 84, x: 0, y: 2, z: 0, color: '#0D9488' },
+          { shape: 'box', width: 120, height: 22, depth: 5, x: 0, y: 13, z: -39.5, color: '#14B8A6' },
+          { shape: 'box', width: 120, height: 22, depth: 5, x: 0, y: 13, z: 39.5, color: '#14B8A6' },
+          { shape: 'box', width: 5, height: 22, depth: 84, x: -57.5, y: 13, z: 0, color: '#14B8A6' },
+          { shape: 'box', width: 5, height: 22, depth: 84, x: 57.5, y: 13, z: 0, color: '#14B8A6' },
+          { shape: 'box', width: 4, height: 18, depth: 76, x: 0, y: 11, z: 0, color: '#8B5CF6' },
+          { shape: 'box', width: 56, height: 18, depth: 4, x: 29, y: 11, z: 0, color: '#8B5CF6' },
+        ]),
+      },
+      {
+        id: 'planter-pot',
+        name: 'Modern Planter Pot',
+        category: 'Home',
+        dims: '92 × 92 × 84 mm',
+        printTime: '~2h 15m',
+        build: () => buildModelFromParts('Modern Planter Pot', [
+          { shape: 'cylinder', radiusTop: 44, radiusBottom: 34, height: 76, segments: 12, x: 0, y: 40, z: 0, color: '#8B5CF6' },
+          { shape: 'cylinder', radius: 46, height: 8, segments: 12, x: 0, y: 80, z: 0, color: '#14B8A6' },
+          { shape: 'cylinder', radius: 37, height: 7, segments: 12, x: 0, y: 3.5, z: 0, color: '#0D9488' },
+          { shape: 'torus', radius: 41, tube: 2.8, x: 0, y: 54, z: 0, rx: 90, color: '#5EEAD4' },
+          { shape: 'torus', radius: 38, tube: 2.8, x: 0, y: 28, z: 0, rx: 90, color: '#5EEAD4' },
+        ]),
+      },
+      {
+        id: 'keychain-tag',
+        name: 'Custom Keychain Tag',
+        category: 'Gadgets',
+        dims: '88 × 26 × 6 mm',
+        printTime: '~22m',
+        build: () => buildModelFromParts('Custom Keychain Tag', [
+          { shape: 'box', width: 64, height: 4.5, depth: 26, x: 4, y: 2.25, z: 0, color: '#14B8A6' },
+          { shape: 'cylinder', radius: 13, height: 4.5, x: -28, y: 2.25, z: 0, color: '#14B8A6' },
+          { shape: 'cylinder', radius: 13, height: 4.5, x: 36, y: 2.25, z: 0, color: '#14B8A6' },
+          { shape: 'torus', radius: 7, tube: 2.2, x: -34, y: 2.25, z: 0, rx: 90, color: '#8B5CF6' },
+          { shape: 'box', width: 52, height: 2.0, depth: 18, x: 6, y: 5.0, z: 0, color: '#5EEAD4' },
+        ]),
+      },
+    ];
+
+    // =========================================================================
+    // 8. OFFSCREEN 3D THUMBNAIL RENDERER FOR MAKERWORLD CARDS
+    // =========================================================================
+    let thumbRenderer = null;
+    function getOrRenderModelThumbnail(modelDef) {
+      if (state.thumbnailCache[modelDef.id]) return state.thumbnailCache[modelDef.id];
+      try {
+        const w = 320, h = 210;
+        if (!thumbRenderer) {
+          thumbRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+          thumbRenderer.setSize(w, h);
+          thumbRenderer.setPixelRatio(1);
+          thumbRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+          thumbRenderer.toneMappingExposure = 1.18;
+        }
+
+        const tScene = new THREE.Scene();
+        const tCam = new THREE.PerspectiveCamera(36, w / h, 0.5, 2000);
+        tScene.add(new THREE.HemisphereLight(0xffffff, 0xb9a3e3, 1.15));
+        const tKey = new THREE.DirectionalLight(0xffffff, 1.5);
+        tKey.position.set(120, 190, 140);
+        tScene.add(tKey);
+        const tTeal = new THREE.DirectionalLight(0x5eead4, 0.85);
+        tTeal.position.set(-140, 80, -100);
+        tScene.add(tTeal);
+
+        const obj = modelDef.build();
+        obj.traverse((c) => {
+          if (c.isMesh && c.material) {
+            c.material.wireframe = false;
+            c.material.transparent = false;
+            c.material.opacity = 1;
+          }
+        });
+        tScene.add(obj);
+
+        const box = getWorldBox(obj);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 18);
+
+        const disc = new THREE.Mesh(
+          new THREE.CircleGeometry(maxDim * 0.92, 36),
+          new THREE.MeshBasicMaterial({ color: 0xb9a3e3, transparent: true, opacity: 0.3 })
+        );
+        disc.rotation.x = -Math.PI / 2;
+        disc.position.set(center.x, box.min.y - 0.3, center.z);
+        tScene.add(disc);
+
+        const dist = maxDim * 2.15;
+        tCam.position.set(center.x + dist * 0.72, center.y + dist * 0.52, center.z + dist * 0.78);
+        tCam.lookAt(center);
+        thumbRenderer.render(tScene, tCam);
+
+        const comp = document.createElement('canvas');
+        comp.width = w;
+        comp.height = h;
+        const ctx = comp.getContext('2d');
+        const grad = ctx.createRadialGradient(w * 0.48, h * 0.36, 10, w * 0.5, h * 0.5, w * 0.72);
+        grad.addColorStop(0, '#FAF8FF');
+        grad.addColorStop(0.55, '#EAE3F7');
+        grad.addColorStop(1, '#DDD4F0');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(thumbRenderer.domElement, 0, 0);
+
+        const dataUrl = comp.toDataURL('image/png');
+        state.thumbnailCache[modelDef.id] = dataUrl;
+        return dataUrl;
+      } catch (err) {
+        console.warn('Thumbnail render fallback:', err);
+        return '';
+      }
+    }
+
+    function renderStarterModels() {
+      try {
+        const grid = document.getElementById('starter-models-grid');
+        const q = document.getElementById('mw-search-input').value.trim().toLowerCase();
+        const cat = state.activeCategory;
+
+        // Update live MakerWorld anchor href dynamically
+        const mwLink = document.getElementById('link-mw-live-search');
+        if (mwLink) {
+          mwLink.href = `https://makerworld.com/en/search/models?keyword=${encodeURIComponent(q || 'desk organizer')}`;
+        }
+
+        const filtered = STARTER_MODELS.filter((m) => {
+          const matchCat = cat === 'All' || m.category === cat;
+          const matchQ = !q || m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q);
+          return matchCat && matchQ;
+        });
+
+        if (filtered.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full py-10 text-center text-sm text-[#5E5278]">
+              No built-in models match "${escapeHtml(q)}". Click <strong class="text-[#0D9488]">Search on MakerWorld.com</strong> above to browse online!
+            </div>`;
+          return;
+        }
+
+        grid.innerHTML = filtered
+          .map((m) => {
+            const thumbSrc = getOrRenderModelThumbnail(m);
+            return `
+              <div class="elevated-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-[#14B8A6] transition group">
+                <div>
+                  <div class="relative aspect-[16/10] bg-[#EAE3F7] overflow-hidden border-b border-[#DDD4F0]">
+                    ${thumbSrc ? `<img src="${thumbSrc}" alt="${escapeHtml(m.name)} 3D preview" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />` : ''}
+                    <span class="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-lg bg-[#FFFFFF]/90 text-[#5E5278] border border-[#DDD4F0]">${m.category}</span>
+                    <span class="absolute bottom-2 right-2 px-2 py-0.5 text-[10px] font-mono font-bold rounded-lg bg-[#CCFBF1]/95 text-[#0F766E] border border-[#99F6E4]">${m.printTime}</span>
+                  </div>
+                  <div class="p-3.5 pb-2">
+                    <h4 class="text-sm font-bold text-[#2A223D] group-hover:text-[#0D9488] transition truncate">${m.name}</h4>
+                    <div class="text-[11px] font-mono text-[#5E5278] mt-0.5">${m.dims}</div>
+                  </div>
+                </div>
+                <div class="p-3.5 pt-2">
+                  <button type="button" data-starter-id="${m.id}" class="load-starter-btn w-full py-2 rounded-xl bg-[#EAE3F7] hover:bg-[#0D9488] text-[#2A223D] hover:text-white text-xs font-bold border border-[#DDD4F0] hover:border-transparent transition">
+                    Load to Bed
+                  </button>
+                </div>
+              </div>`;
+          })
+          .join('');
+
+        grid.querySelectorAll('.load-starter-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const modelDef = STARTER_MODELS.find((m) => m.id === btn.dataset.starterId);
+            if (modelDef) {
+              addModelToScene(modelDef.build());
+              closeModal('makerworld-modal');
+              showToast(`Loaded "${modelDef.name}" onto build plate!`, 'success');
+            }
+          });
+        });
+      } catch (err) {
+        console.error('Render catalog error:', err);
+      }
+    }
+
+    // =========================================================================
+    // 9. IMAGE -> 3D CONVERTER ENGINE
+    // =========================================================================
+    function createSampleGraphic(type) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+
+      if (type === 'star') {
+        ctx.fillStyle = '#1E1B2E';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.arc(128, 128, 102, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const r = i % 2 === 0 ? 78 : 34;
+          const a = (Math.PI / 5) * i - Math.PI / 2;
+          const x = 128 + Math.cos(a) * r;
+          const y = 128 + Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        return { canvas: c, name: 'Star Emblem' };
+      } else {
+        const bg = ctx.createLinearGradient(0, 0, 0, 256);
+        bg.addColorStop(0, '#1E1B2E');
+        bg.addColorStop(1, '#3D3461');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, 256, 256);
+
+        const sun = ctx.createRadialGradient(178, 74, 4, 178, 74, 34);
+        sun.addColorStop(0, '#FFFFFF');
+        sun.addColorStop(1, '#A5B4FC');
+        ctx.fillStyle = sun;
+        ctx.beginPath();
+        ctx.arc(178, 74, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#CBD5E1';
+        ctx.beginPath();
+        ctx.moveTo(16, 224);
+        ctx.lineTo(96, 86);
+        ctx.lineTo(174, 224);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(86, 224);
+        ctx.lineTo(168, 102);
+        ctx.lineTo(244, 224);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 12;
+        ctx.strokeRect(14, 14, 228, 228);
+        return { canvas: c, name: 'Mountain Badge' };
+      }
+    }
+
+    function loadImageIntoConverter(imgOrCanvas, name = 'Uploaded Image') {
+      state.img3d.imageEl = imgOrCanvas;
+      state.img3d.name = name;
+
+      const temp = document.createElement('canvas');
+      const srcW = imgOrCanvas.naturalWidth || imgOrCanvas.width;
+      const srcH = imgOrCanvas.naturalHeight || imgOrCanvas.height;
+      const scale = Math.min(1, 512 / Math.max(srcW, srcH));
+      temp.width = Math.max(1, Math.round(srcW * scale));
+      temp.height = Math.max(1, Math.round(srcH * scale));
+      const tCtx = temp.getContext('2d');
+      tCtx.fillStyle = '#000000';
+      tCtx.fillRect(0, 0, temp.width, temp.height);
+      tCtx.drawImage(imgOrCanvas, 0, 0, temp.width, temp.height);
+      state.img3d.dataUrl = temp.toDataURL('image/jpeg', 0.88);
+
+      document.getElementById('img3d-res-badge').textContent = `${srcW}×${srcH}`;
+      updateImg3DPreviews();
+    }
+
+    function computeHeightGrid(imgEl, cols, rows, { invert, smoothPasses, mode, threshold }) {
+      const c = document.createElement('canvas');
+      c.width = cols;
+      c.height = rows;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, cols, rows);
+      ctx.drawImage(imgEl, 0, 0, cols, rows);
+
+      const pixels = ctx.getImageData(0, 0, cols, rows).data;
+      let grid = new Float32Array(cols * rows);
+      for (let i = 0; i < cols * rows; i++) {
+        const a = pixels[i * 4 + 3] / 255;
+        let lum = (0.299 * pixels[i * 4] + 0.587 * pixels[i * 4 + 1] + 0.114 * pixels[i * 4 + 2]) * a;
+        if (invert) lum = 255 - lum;
+        grid[i] = mode === 'logo' ? (lum >= threshold ? 1.0 : 0.0) : lum / 255.0;
+      }
+
+      const passes = mode === 'logo' ? Math.min(smoothPasses, 1) : smoothPasses;
+      for (let p = 0; p < passes; p++) {
+        const next = new Float32Array(cols * rows);
+        for (let y = 0; y < rows; y++) {
+          for (let x = 0; x < cols; x++) {
+            let sum = 0, count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              const ny = y + dy;
+              if (ny < 0 || ny >= rows) continue;
+              for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx;
+                if (nx < 0 || nx >= cols) continue;
+                sum += grid[ny * cols + nx];
+                count++;
+              }
+            }
+            next[y * cols + x] = sum / count;
+          }
+        }
+        grid = next;
+      }
+      return grid;
+    }
+
+    function updateImg3DPreviews() {
+      const imgEl = state.img3d.imageEl;
+      if (!imgEl) return;
+
+      const previewOrig = document.getElementById('img3d-preview-orig');
+      const previewDepth = document.getElementById('img3d-preview-depth');
+      const srcW = imgEl.naturalWidth || imgEl.width;
+      const srcH = imgEl.naturalHeight || imgEl.height;
+      const aspect = srcW / srcH;
+
+      const pSize = 200;
+      const pw = aspect >= 1 ? pSize : Math.max(24, Math.round(pSize * aspect));
+      const ph = aspect >= 1 ? Math.max(24, Math.round(pSize / aspect)) : pSize;
+
+      previewOrig.width = pw;
+      previewOrig.height = ph;
+      previewOrig.getContext('2d').drawImage(imgEl, 0, 0, pw, ph);
+
+      const grid = computeHeightGrid(imgEl, pw, ph, {
+        invert: document.getElementById('ctrl-img-invert').checked,
+        smoothPasses: parseInt(document.getElementById('ctrl-img-smooth').value, 10),
+        mode: state.img3d.mode,
+        threshold: parseInt(document.getElementById('ctrl-img-thresh').value, 10),
+      });
+
+      previewDepth.width = pw;
+      previewDepth.height = ph;
+      const dCtx = previewDepth.getContext('2d');
+      const outImg = dCtx.createImageData(pw, ph);
+      for (let i = 0; i < pw * ph; i++) {
+        const v = Math.round(Math.max(0, Math.min(1, grid[i])) * 255);
+        outImg.data[i * 4] = v;
+        outImg.data[i * 4 + 1] = v;
+        outImg.data[i * 4 + 2] = v;
+        outImg.data[i * 4 + 3] = 255;
+      }
+      dCtx.putImageData(outImg, 0, 0);
+    }
+
+    function buildWatertightHeightmapMesh(imgEl, {
+      widthMm, reliefMm, baseMm, detail, smoothPasses, invert, mode,
+      threshold, includeBaseplate, addKeychainLoop, name, colorHex = null,
+    }) {
+      const srcW = imgEl.naturalWidth || imgEl.width;
+      const srcH = imgEl.naturalHeight || imgEl.height;
+      const aspect = srcW / srcH;
+
+      const cols = aspect >= 1 ? detail : Math.max(24, Math.round(detail * aspect));
+      const rows = aspect >= 1 ? Math.max(24, Math.round(detail / aspect)) : detail;
+      const depthMm = widthMm / aspect;
+
+      const grid = computeHeightGrid(imgEl, cols, rows, { invert, smoothPasses, mode, threshold });
+      const effectiveBase = mode === 'logo' && !includeBaseplate ? 0.4 : baseMm;
+
+      const positions = [];
+      const indices = [];
+      const addVert = (x, y, z) => {
+        const idx = positions.length / 3;
+        positions.push(x, y, z);
+        return idx;
+      };
+
+      const topIdx = new Int32Array(cols * rows);
+      const botIdx = new Int32Array(cols * rows);
+
+      for (let r = 0; r < rows; r++) {
+        const z = (r / (rows - 1) - 0.5) * depthMm;
+        for (let c = 0; c < cols; c++) {
+          const x = (c / (cols - 1) - 0.5) * widthMm;
+          topIdx[r * cols + c] = addVert(x, effectiveBase + grid[r * cols + c] * reliefMm, z);
+          botIdx[r * cols + c] = addVert(x, 0, z);
+        }
+      }
+
+      // Top & Bottom Faces
+      for (let r = 0; r < rows - 1; r++) {
+        for (let c = 0; c < cols - 1; c++) {
+          const a = topIdx[r * cols + c], b = topIdx[r * cols + c + 1];
+          const d = topIdx[(r + 1) * cols + c], e = topIdx[(r + 1) * cols + c + 1];
+          indices.push(a, d, b, b, d, e);
+
+          const ba = botIdx[r * cols + c], bb = botIdx[r * cols + c + 1];
+          const bd = botIdx[(r + 1) * cols + c], be = botIdx[(r + 1) * cols + c + 1];
+          indices.push(ba, bb, bd, bb, be, bd);
+        }
+      }
+
+      // 4 Perimeter Side Walls (Watertight Closure)
+      for (let c = 0; c < cols - 1; c++) {
+        indices.push(topIdx[c], topIdx[c + 1], botIdx[c], topIdx[c + 1], botIdx[c + 1], botIdx[c]);
+        const lr = (rows - 1) * cols;
+        indices.push(topIdx[lr + c], botIdx[lr + c], topIdx[lr + c + 1], topIdx[lr + c + 1], botIdx[lr + c], botIdx[lr + c + 1]);
+      }
+      for (let r = 0; r < rows - 1; r++) {
+        indices.push(topIdx[r * cols], botIdx[r * cols], topIdx[(r + 1) * cols], topIdx[(r + 1) * cols], botIdx[r * cols], botIdx[(r + 1) * cols]);
+        const lc = cols - 1;
+        indices.push(topIdx[r * cols + lc], topIdx[(r + 1) * cols + lc], botIdx[r * cols + lc], topIdx[(r + 1) * cols + lc], botIdx[(r + 1) * cols + lc], botIdx[r * cols + lc]);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+
+      const group = new THREE.Group();
+      group.name = colorHex ? name : `${name} (${mode === 'logo' ? 'Keychain' : '3D Relief'})`;
+      group.add(new THREE.Mesh(geo, createStudioMaterial(colorHex || (mode === 'logo' ? '#8B5CF6' : '#14B8A6'))));
+
+      if (mode === 'logo' && addKeychainLoop) {
+        const ringRadius = Math.max(5.5, Math.min(9, widthMm * 0.08));
+        const tubeRadius = Math.max(1.8, Math.min(3, effectiveBase * 0.85));
+        const ringGeo = new THREE.TorusGeometry(ringRadius, tubeRadius, 16, 36);
+        ringGeo.rotateX(Math.PI / 2);
+        const ringMesh = new THREE.Mesh(ringGeo, createStudioMaterial('#0D9488'));
+        ringMesh.position.set(0, Math.max(tubeRadius, effectiveBase * 0.5), -depthMm / 2 - ringRadius * 0.65);
+        group.add(ringMesh);
+      }
+
+      snapGroupFlatToBed(group);
+      centerGroupOnBed(group);
+      return group;
+    }
+
+    // =========================================================================
+    // 10. FILE IMPORT & SLICER-READY EXPORTS
+    // =========================================================================
+    const stlLoader = new STLLoader();
+    const objLoader = new OBJLoader();
+    const gltfLoader = new GLTFLoader();
+
+    async function handleImportFile(file) {
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+        openImageFileInConverter(file);
+        return;
+      }
+
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
+      try {
+        const buffer = await file.arrayBuffer();
+        const group = new THREE.Group();
+        group.name = baseName;
+
+        if (ext === 'stl') {
+          const geometry = stlLoader.parse(buffer);
+          geometry.computeVertexNormals();
+          group.add(new THREE.Mesh(geometry, createStudioMaterial('#14B8A6')));
+        } else if (ext === 'obj') {
+          const obj = objLoader.parse(new TextDecoder().decode(buffer));
+          obj.traverse((child) => {
+            if (child.isMesh) {
+              child.geometry.computeVertexNormals();
+              child.material = createStudioMaterial('#8B5CF6');
+            }
+          });
+          group.add(obj);
+        } else if (ext === 'glb' || ext === 'gltf') {
+          await new Promise((resolve, reject) => {
+            gltfLoader.parse(buffer, '', (gltf) => {
+              group.add(gltf.scene);
+              resolve();
+            }, reject);
+          });
+        } else {
+          showToast(`Unsupported format ".${ext}". Use .STL, .OBJ, .GLB, .GLTF, or PNG/JPG.`, 'error');
+          return;
+        }
+
+        snapGroupFlatToBed(group);
+        centerGroupOnBed(group);
+        addModelToScene(group);
+        closeModal('makerworld-modal');
+        showToast(`Imported "${file.name}"! Click Auto-Correct to verify print fit.`, 'success');
+      } catch (err) {
+        console.error('Import error:', err);
+        showToast(`Could not load "${file.name}". Please check the file.`, 'error');
+      }
+    }
+
+    function openImageFileInConverter(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          openModal('img3d-modal');
+          loadImageIntoConverter(img, file.name.replace(/\.[^/.]+$/, ''));
+          showToast(`Loaded "${file.name}" into Image → 3D!`, 'info');
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    function performExport() {
+      if (state.models.length === 0) {
+        showToast('Build plate is empty — add or import a model first.', 'warn');
+        return;
+      }
+      try {
+        const exportAll = document.getElementById('export-all-bed').checked;
+        const sourceModels = exportAll || !state.selected ? state.models : [state.selected];
+        const exportGroup = new THREE.Group();
+        sourceModels.forEach((m) => {
+          m.updateMatrixWorld(true);
+          exportGroup.add(m.clone(true));
+        });
+        exportGroup.updateMatrixWorld(true);
+
+        const rawName = document.getElementById('export-filename').value.trim() || 'axel-3d-model';
+        const baseName = rawName.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase();
+        const fmt = state.exportFormat;
+
+        if (fmt === 'stl') {
+          const slicerGroup = new THREE.Group();
+          slicerGroup.add(exportGroup);
+          slicerGroup.rotation.x = Math.PI / 2; // Z-Up for slicers
+          slicerGroup.updateMatrixWorld(true);
+
+          const exporter = new STLExporter();
+          const binaryData = exporter.parse(slicerGroup, { binary: true });
+          triggerDownload(new Blob([binaryData], { type: 'application/octet-stream' }), `${baseName}.stl`);
+          showToast(`Exported slicer-ready ${baseName}.stl (Z-Up)!`, 'success');
+        } else if (fmt === 'obj') {
+          const exporter = new OBJExporter();
+          triggerDownload(new Blob([exporter.parse(exportGroup)], { type: 'text/plain' }), `${baseName}.obj`);
+          showToast(`Exported ${baseName}.obj!`, 'success');
+        } else if (fmt === 'glb') {
+          const exporter = new GLTFExporter();
+          exporter.parse(
+            exportGroup,
+            (result) => {
+              triggerDownload(new Blob([result], { type: 'model/gltf-binary' }), `${baseName}.glb`);
+              showToast(`Exported ${baseName}.glb!`, 'success');
+            },
+            (err) => {
+              console.error('GLB error:', err);
+              showToast('GLB export failed. Try Binary STL or OBJ.', 'error');
+            },
+            { binary: true }
+          );
+        }
+        closeModal('export-modal');
+      } catch (err) {
+        console.error('Export error:', err);
+        showToast('Export encountered an error.', 'error');
+      }
+    }
+
+    // =========================================================================
+    // 11. AXEL AI ASSISTANT (GEMINI API + ROCK-SOLID LOCAL FALLBACK)
+    // =========================================================================
+    function getSceneSummaryForAI() {
+      if (state.models.length === 0) return `The ${state.bedSize}x${state.bedSize}mm build plate is empty.`;
+      return state.models.map((m, i) => {
+        const box = getWorldBox(m);
+        const s = box.getSize(new THREE.Vector3());
+        return `${i + 1}. "${m.name}"${m === state.selected ? ' [SELECTED]' : ''}: ${s.x.toFixed(1)}x${s.z.toFixed(1)}x${s.y.toFixed(1)}mm`;
+      }).join('\n');
+    }
+
+    function appendChatBubble(role, text, imageUrl = null) {
+      const chatMessages = document.getElementById('chat-messages');
+      const wrapper = document.createElement('div');
+      if (role === 'user') {
+        wrapper.className = 'flex justify-end';
+        wrapper.innerHTML = `
+          <div class="bg-[#0D9488] text-white rounded-2xl rounded-tr-md px-3.5 py-2.5 max-w-[85%] leading-relaxed space-y-2 shadow-xs">
+            ${imageUrl ? `<img src="${imageUrl}" class="w-full max-h-36 object-cover rounded-xl border border-white/30" alt="Uploaded" />` : ''}
+            <div>${escapeHtml(text)}</div>
+          </div>`;
+      } else {
+        wrapper.className = 'flex items-start gap-2.5';
+        wrapper.innerHTML = `
+          <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0 mt-0.5 shadow-xs">${AXEL_ROBOT_SVG}</div>
+          <div class="bg-[#FAF8FF] border border-[#DDD4F0] rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[#2A223D] max-w-[85%] leading-relaxed shadow-xs">${escapeHtml(text)}</div>`;
+      }
+      chatMessages.appendChild(wrapper);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const chatMessages = document.getElementById('chat-messages');
+      const el = document.createElement('div');
+      el.className = 'flex items-start gap-2.5';
+      el.innerHTML = `
+        <div class="w-8 h-8 rounded-lg overflow-hidden shrink-0 mt-0.5 shadow-xs">${AXEL_ROBOT_SVG}</div>
+        <div class="bg-[#FAF8FF] border border-[#DDD4F0] rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5 shadow-xs">
+          <span class="typing-dot w-2 h-2 rounded-full bg-[#14B8A6]"></span>
+          <span class="typing-dot w-2 h-2 rounded-full bg-[#8B5CF6]"></span>
+          <span class="typing-dot w-2 h-2 rounded-full bg-[#14B8A6]"></span>
+        </div>`;
+      chatMessages.appendChild(el);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return el;
+    }
+
+    function getConfiguredApiKey() {
+      try {
+        return localStorage.getItem(API_KEY_STORAGE) || '';
+      } catch {
+        return '';
+      }
+    }
+
+    async function callGeminiWithBackoff(userPrompt, imageInline = null) {
+      const apiKey = getConfiguredApiKey();
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `You are "Axel", a friendly, encouraging AI 3D modeling buddy inside Axel 3D Studio (${state.bedSize}x${state.bedSize}mm printer bed).
+Always respond with valid JSON matching: { "reply": string, "actions": array }. Keep "reply" concise (1-3 sentences).
+Actions:
+- "create_model": { "type": "create_model", "name": string, "parts": [{ "shape": "box"|"cylinder"|"sphere"|"cone"|"torus", "width", "height", "depth", "radius", "radiusTop", "radiusBottom", "tube", "x", "y", "z", "rx", "ry", "rz", "color" }] } (dimensions in mm, Y is UP, parts connected).
+- "transform": { "type": "transform", "targetWidthMm", "scaleFactor", "moveX", "moveY", "moveZ", "rotateX", "rotateY", "rotateZ" }.
+- "auto_correct": { "type": "auto_correct" }.
+- "mirror": { "type": "mirror", "axis": "x"|"y"|"z" }.
+- "duplicate": { "type": "duplicate" }.
+- "clear": { "type": "clear" }.
+
+Current Bed State:
+${getSceneSummaryForAI()}`;
+
+      const parts = [{ text: userPrompt }];
+      if (imageInline?.base64) {
+        parts.push({ inlineData: { mimeType: imageInline.mimeType || 'image/jpeg', data: imageInline.base64 } });
+      }
+
+      const payload = {
+        contents: [{ role: 'user', parts }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              reply: { type: 'STRING' },
+              actions: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    type: { type: 'STRING' },
+                    name: { type: 'STRING' },
+                    parts: {
+                      type: 'ARRAY',
+                      items: {
+                        type: 'OBJECT',
+                        properties: {
+                          shape: { type: 'STRING' },
+                          width: { type: 'NUMBER' },
+                          height: { type: 'NUMBER' },
+                          depth: { type: 'NUMBER' },
+                          radius: { type: 'NUMBER' },
+                          radiusTop: { type: 'NUMBER' },
+                          radiusBottom: { type: 'NUMBER' },
+                          tube: { type: 'NUMBER' },
+                          x: { type: 'NUMBER' },
+                          y: { type: 'NUMBER' },
+                          z: { type: 'NUMBER' },
+                          rx: { type: 'NUMBER' },
+                          ry: { type: 'NUMBER' },
+                          rz: { type: 'NUMBER' },
+                          color: { type: 'STRING' },
+                        },
+                      },
+                    },
+                    scaleFactor: { type: 'NUMBER' },
+                    targetWidthMm: { type: 'NUMBER' },
+                    moveX: { type: 'NUMBER' },
+                    moveY: { type: 'NUMBER' },
+                    moveZ: { type: 'NUMBER' },
+                    rotateX: { type: 'NUMBER' },
+                    rotateY: { type: 'NUMBER' },
+                    rotateZ: { type: 'NUMBER' },
+                    axis: { type: 'STRING' },
+                  },
+                  required: ['type'],
+                },
+              },
+            },
+            required: ['reply'],
+          },
+        },
+      };
+
+      const delays = [800, 1600, 3200];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        try {
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            if (attempt < delays.length) {
+              await new Promise((r) => setTimeout(r, delays[attempt]));
+              continue;
+            }
+            throw new Error(`HTTP ${res.status}`);
+          }
+          const data = await res.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!rawText) throw new Error('Empty response');
+          const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+          return JSON.parse(cleaned);
+        } catch (err) {
+          if (attempt < delays.length) await new Promise((r) => setTimeout(r, delays[attempt]));
+          else throw err;
+        }
+      }
+    }
+
+    function executeAxelActions(actions = []) {
+      if (!Array.isArray(actions)) return;
+      actions.forEach((act) => {
+        const type = (act.type || '').toLowerCase();
+        if (type === 'clear') {
+          if (state.models.length > 0) {
+            saveUndoSnapshot();
+            transformControls?.detach();
+            state.models.forEach((m) => scene.remove(m));
+            state.models = [];
+            selectModel(null);
+            focusCameraOn(null);
+          }
+        } else if (type === 'create_model' && Array.isArray(act.parts) && act.parts.length > 0) {
+          addModelToScene(buildModelFromParts(act.name || 'Axel Model', act.parts));
+        } else if (type === 'transform') {
+          const target = state.selected || state.models[0];
+          if (!target) return;
+          saveUndoSnapshot();
+          if (typeof act.targetWidthMm === 'number' && act.targetWidthMm > 0) {
+            const s = getWorldBox(target).getSize(new THREE.Vector3());
+            if (s.x > 0.001) target.scale.multiplyScalar(act.targetWidthMm / s.x);
+          } else if (typeof act.scaleFactor === 'number' && act.scaleFactor > 0) {
+            target.scale.multiplyScalar(act.scaleFactor);
+          }
+          if (typeof act.rotateX === 'number') target.rotation.x += THREE.MathUtils.degToRad(act.rotateX);
+          if (typeof act.rotateY === 'number') target.rotation.y += THREE.MathUtils.degToRad(act.rotateY);
+          if (typeof act.rotateZ === 'number') target.rotation.z += THREE.MathUtils.degToRad(act.rotateZ);
+          if (typeof act.moveX === 'number') target.position.x += act.moveX;
+          if (typeof act.moveY === 'number') target.position.y += act.moveY;
+          if (typeof act.moveZ === 'number') target.position.z += act.moveZ;
+          if (typeof act.moveY !== 'number') snapGroupFlatToBed(target);
+          updateSelectionHelper();
+          updateModelStats();
+          focusCameraOn(target);
+        } else if (type === 'auto_correct') {
+          runAutoCorrect();
+        } else if (type === 'mirror') {
+          const target = state.selected || state.models[0];
+          if (!target) return;
+          saveUndoSnapshot();
+          const axis = (act.axis || 'x').toLowerCase();
+          target.scale[axis === 'y' ? 'y' : axis === 'z' ? 'z' : 'x'] *= -1;
+          snapGroupFlatToBed(target);
+          updateSelectionHelper();
+          updateModelStats();
+        } else if (type === 'duplicate') {
+          const target = state.selected || state.models[0];
+          if (!target) return;
+          const copy = target.clone(true);
+          copy.name = `${target.name} Copy`;
+          copy.position.x += 25;
+          addModelToScene(copy);
+        }
+      });
+    }
+
+    function runLocalCommandFallback(text, attachment) {
+      const lower = text.toLowerCase();
+      const mmMatch = lower.match(/(\d+(?:\.\d+)?)\s*mm/);
+      const targetMm = mmMatch ? parseFloat(mmMatch[1]) : null;
+
+      if (attachment && state.img3d.imageEl) {
+        const relief = buildWatertightHeightmapMesh(state.img3d.imageEl, {
+          widthMm: targetMm || 90, reliefMm: 5, baseMm: 2, detail: 80, smoothPasses: 1,
+          invert: false, mode: 'relief', threshold: 128, includeBaseplate: true,
+          addKeychainLoop: false, name: attachment.name || 'Image',
+        });
+        addModelToScene(relief);
+        return "I turned your image into a watertight 3D relief directly on the build plate!";
+      }
+
+      if (lower.includes('phone stand')) {
+        const g = STARTER_MODELS.find((m) => m.id === 'phone-stand').build();
+        addModelToScene(g);
+        return "Done! I built an Adjustable Phone Stand right on the build plate.";
+      }
+      if (lower.includes('coaster')) {
+        const g = STARTER_MODELS.find((m) => m.id === 'gear-coaster').build();
+        addModelToScene(g);
+        if (targetMm) executeAxelActions([{ type: 'transform', targetWidthMm: targetMm }]);
+        return `Built a Gear Coaster${targetMm ? ` sized to ${targetMm}mm wide` : ''} and snapped it flat on the bed!`;
+      }
+      if (lower.includes('cup') || lower.includes('organizer') || lower.includes('pen')) {
+        addModelToScene(STARTER_MODELS.find((m) => m.id === 'hex-pen-cup').build());
+        return "Here's a Hex Desk Pen Cup ready to print!";
+      }
+      if (lower.includes('axel') || lower.includes('robot') || lower.includes('mascot')) {
+        addModelToScene(STARTER_MODELS.find((m) => m.id === 'axel-mascot').build());
+        return "Hey, that's me! I placed the Axel Mascot Figurine on the build plate.";
+      }
+      if (lower.includes('planter') || lower.includes('pot')) {
+        addModelToScene(STARTER_MODELS.find((m) => m.id === 'planter-pot').build());
+        return "Added a Modern Planter Pot to the build plate!";
+      }
+      if (lower.includes('tray')) {
+        addModelToScene(STARTER_MODELS.find((m) => m.id === 'parts-tray').build());
+        return "Added a Stackable Parts Tray to the build plate!";
+      }
+      if (lower.includes('keychain')) {
+        addModelToScene(STARTER_MODELS.find((m) => m.id === 'keychain-tag').build());
+        return "Added a Custom Keychain Tag ready for personalization!";
+      }
+      if (lower.includes('box') || lower.includes('cube')) {
+        const sz = targetMm || 40;
+        addModelToScene(buildModelFromParts(`Cube ${sz}mm`, [{ shape: 'box', width: sz, height: sz, depth: sz, color: '#14B8A6' }]));
+        return `Created a ${sz}mm cube cleanly centered on the build plate!`;
+      }
+      if (lower.includes('auto-fix') || lower.includes('auto fix') || lower.includes('repair') || lower.includes('fix')) {
+        runAutoCorrect();
+        return "Ran Auto-Correct! Normals verified, model centered, and bottom snapped flat to Y=0.";
+      }
+      if (lower.includes('center')) {
+        const t = state.selected || state.models[0];
+        if (t) { saveUndoSnapshot(); centerGroupOnBed(t); snapGroupFlatToBed(t); updateSelectionHelper(); updateModelStats(); }
+        return "Centered your model cleanly on the build plate!";
+      }
+      if (lower.includes('mirror') || lower.includes('flip')) {
+        executeAxelActions([{ type: 'mirror', axis: 'x' }]);
+        return "Mirrored your model along the X axis!";
+      }
+      if (lower.includes('duplicate') || lower.includes('copy')) {
+        executeAxelActions([{ type: 'duplicate' }]);
+        return "Duplicated your selected model right next to the original!";
+      }
+      if (targetMm || lower.includes('resize') || lower.includes('scale')) {
+        const t = state.selected || state.models[0];
+        const w = targetMm || 100;
+        if (t) {
+          executeAxelActions([{ type: 'transform', targetWidthMm: w }]);
+          return `Scaled your model to ${w}mm wide and kept it flat on the bed!`;
+        }
+        return `Add a model to the bed first and I'll scale it to ${w}mm for you!`;
+      }
+
+      return "I'm running in local studio mode right now (you can add a Gemini API key in Settings ⚙ for full custom AI generation). Try 'Build a phone stand', 'Make a 70mm coaster', 'Scale to 100mm wide', or 'Auto-Fix my print'!";
+    }
+
+    async function sendPromptToAxel(promptText, customAttachment = null) {
+      const chatInput = document.getElementById('chat-input');
+      const chatSendBtn = document.getElementById('chat-send');
+      const attachment = customAttachment || state.chatAttachment;
+      const text = promptText.trim() || (attachment ? 'Turn this image into a 3D printable model!' : '');
+      if (!text && !attachment) return;
+
+      appendChatBubble('user', text, attachment?.dataUrl || null);
+      chatInput.value = '';
+      clearChatAttachment();
+      chatInput.disabled = true;
+      chatSendBtn.disabled = true;
+      const typingEl = showTypingIndicator();
+
+      try {
+        const result = await callGeminiWithBackoff(text, attachment);
+        typingEl.remove();
+        appendChatBubble('assistant', result.reply || 'Done! Take a look at the build plate.');
+        if (result.actions?.length) executeAxelActions(result.actions);
+      } catch {
+        typingEl.remove();
+        const fallbackReply = runLocalCommandFallback(text, attachment);
+        appendChatBubble('assistant', fallbackReply);
+      } finally {
+        chatInput.disabled = false;
+        chatSendBtn.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    function setChatAttachment(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        state.chatAttachment = {
+          name: file.name,
+          mimeType: file.type || 'image/jpeg',
+          base64: dataUrl.split(',')[1],
+          dataUrl,
+        };
+        document.getElementById('chat-attachment-thumb').src = dataUrl;
+        document.getElementById('chat-attachment-name').textContent = file.name;
+        const bar = document.getElementById('chat-attachment-bar');
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+        setAxelOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearChatAttachment() {
+      state.chatAttachment = null;
+      const bar = document.getElementById('chat-attachment-bar');
+      bar.classList.add('hidden');
+      bar.classList.remove('flex');
+    }
+
+    // =========================================================================
+    // 12. MODAL & DRAWER HELPERS (STRICTLY NON-BLOCKING WHEN CLOSED)
+    // =========================================================================
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('is-open');
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('is-open');
+    }
+
+    function setAxelOpen(open) {
+      state.isAxelOpen = open;
+      const panel = document.getElementById('axel-panel');
+      const backdrop = document.getElementById('axel-backdrop');
+      if (open) {
+        panel.classList.remove('translate-x-[120%]', 'opacity-0', 'pointer-events-none');
+        panel.classList.add('translate-x-0', 'opacity-100');
+        if (window.innerWidth < 1024) backdrop.classList.add('is-open');
+      } else {
+        panel.classList.add('translate-x-[120%]', 'opacity-0', 'pointer-events-none');
+        panel.classList.remove('translate-x-0', 'opacity-100');
+        backdrop.classList.remove('is-open');
+      }
+    }
+
+    // =========================================================================
+    // 13. ATTACH ALL EVENT LISTENERS (ZERO INLINE ONCLICK)
+    // =========================================================================
+    function bindAllEvents() {
+      const safeOn = (id, evt, fn) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener(evt, (e) => {
+          try {
+            fn(e);
+          } catch (err) {
+            console.error(`Handler error on #${id} (${evt}):`, err);
+            showToast('Action encountered an error.', 'error');
+          }
+        });
+      };
+
+      // Top Bar Actions
+      const fileInput = document.getElementById('file-input');
+      safeOn('btn-import', 'click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files?.[0]) {
+          handleImportFile(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+
+      safeOn('btn-image-to-3d', 'click', () => {
+        openModal('img3d-modal');
+        if (!state.img3d.imageEl) {
+          const sample = createSampleGraphic('star');
+          loadImageIntoConverter(sample.canvas, sample.name);
+        }
+      });
+
+      safeOn('btn-makerworld', 'click', () => {
+        openModal('makerworld-modal');
+        renderStarterModels();
+        setTimeout(() => document.getElementById('mw-search-input')?.focus(), 50);
+      });
+
+      safeOn('btn-autocorrect', 'click', () => runAutoCorrect());
+
+      safeOn('btn-export-open', 'click', () => {
+        const fnInput = document.getElementById('export-filename');
+        if (fnInput) {
+          const base = (state.selected?.name || 'axel-3d-model').replace(/[^a-z0-9-_]+/gi, '_').toLowerCase();
+          fnInput.value = base;
+        }
+        openModal('export-modal');
+      });
+
+      safeOn('btn-settings-open', 'click', () => {
+        document.getElementById('settings-api-key').value = getConfiguredApiKey();
+        openModal('settings-modal');
+      });
+
+      safeOn('btn-toggle-axel', 'click', () => setAxelOpen(!state.isAxelOpen));
+      safeOn('btn-close-axel', 'click', () => setAxelOpen(false));
+      safeOn('axel-backdrop', 'click', () => setAxelOpen(false));
+
+      // Left Tool Dock
+      document.querySelectorAll('.tool-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setActiveTool(btn.dataset.tool));
+      });
+
+      safeOn('btn-quick-add', 'click', (e) => {
+        e.stopPropagation();
+        document.getElementById('quick-add-menu').classList.toggle('is-open');
+      });
+      safeOn('btn-close-quick-add', 'click', () => closeModal('quick-add-menu'));
+      document.getElementById('quick-add-menu').addEventListener('click', (e) => e.stopPropagation());
+      document.querySelectorAll('[data-add]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          closeModal('quick-add-menu');
+          addPrimitive(btn.dataset.add);
+        });
+      });
+      safeOn('btn-add-3d-text', 'click', () => {
+        const val = document.getElementById('quick-text-input').value;
+        closeModal('quick-add-menu');
+        add3DTextPlaque(val);
+      });
+      safeOn('quick-text-input', 'keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          closeModal('quick-add-menu');
+          add3DTextPlaque(e.target.value);
+        }
+      });
+
+      // Quick Actions
+      safeOn('btn-lay-flat', 'click', () => {
+        const t = state.selected || state.models[0];
+        if (!t) return showToast('Select a model first.', 'warn');
+        saveUndoSnapshot();
+        snapGroupFlatToBed(t);
+        updateSelectionHelper();
+        updateModelStats();
+        showToast('Snapped flat to Y = 0mm', 'success');
+      });
+      safeOn('btn-center-bed', 'click', () => {
+        const t = state.selected || state.models[0];
+        if (!t) return showToast('Select a model first.', 'warn');
+        saveUndoSnapshot();
+        centerGroupOnBed(t);
+        updateSelectionHelper();
+        updateModelStats();
+        showToast('Centered on build plate', 'success');
+      });
+      safeOn('btn-mirror-x', 'click', () => {
+        const t = state.selected || state.models[0];
+        if (!t) return showToast('Select a model first.', 'warn');
+        saveUndoSnapshot();
+        t.scale.x *= -1;
+        updateSelectionHelper();
+        updateModelStats();
+        showToast('Mirrored across X axis', 'info');
+      });
+      safeOn('btn-duplicate', 'click', () => {
+        const t = state.selected || state.models[0];
+        if (!t) return showToast('Select a model to duplicate.', 'warn');
+        const copy = t.clone(true);
+        copy.name = `${t.name} Copy`;
+        copy.position.x += 25;
+        addModelToScene(copy);
+        showToast(`Duplicated "${t.name}"`, 'success');
+      });
+      safeOn('btn-delete', 'click', () => {
+        if (!state.selected) return showToast('Select a model to delete.', 'warn');
+        saveUndoSnapshot();
+        const removed = state.selected;
+        transformControls?.detach();
+        scene.remove(removed);
+        state.models = state.models.filter((m) => m !== removed);
+        selectModel(state.models[state.models.length - 1] || null);
+        showToast(`Deleted "${removed.name}"`, 'info');
+      });
+      safeOn('btn-undo', 'click', undo);
+      safeOn('btn-redo', 'click', redo);
+      safeOn('btn-view-mode', 'click', () => {
+        const modes = ['solid', 'wireframe', 'xray'];
+        setViewMode(modes[(modes.indexOf(state.viewMode) + 1) % modes.length]);
+      });
+
+      // Bottom Precision Bar
+      safeOn('dim-x', 'change', (e) => applyNumericDimension('x', parseFloat(e.target.value)));
+      safeOn('dim-z', 'change', (e) => applyNumericDimension('z', parseFloat(e.target.value)));
+      safeOn('dim-y', 'change', (e) => applyNumericDimension('y', parseFloat(e.target.value)));
+      safeOn('btn-lock-aspect', 'click', () => {
+        state.lockAspect = !state.lockAspect;
+        document.getElementById('icon-lock-closed').classList.toggle('hidden', !state.lockAspect);
+        document.getElementById('icon-lock-open').classList.toggle('hidden', state.lockAspect);
+      });
+      safeOn('bed-size-select', 'change', (e) => {
+        const sz = parseInt(e.target.value, 10);
+        rebuildBuildPlate(sz);
+        showToast(`Build plate switched to ${sz} × ${sz} mm`, 'info');
+      });
+
+      // Image -> 3D Modal
+      const img3dFileInput = document.getElementById('img3d-file-input');
+      safeOn('btn-close-img3d', 'click', () => closeModal('img3d-modal'));
+      safeOn('img3d-modal', 'click', (e) => { if (e.target.id === 'img3d-modal') closeModal('img3d-modal'); });
+      safeOn('img3d-dropzone', 'click', () => img3dFileInput.click());
+      img3dFileInput.addEventListener('change', (e) => {
+        if (e.target.files?.[0]) {
+          openImageFileInConverter(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+      safeOn('btn-sample-star', 'click', () => {
+        const s = createSampleGraphic('star');
+        loadImageIntoConverter(s.canvas, s.name);
+      });
+      safeOn('btn-sample-mountain', 'click', () => {
+        const s = createSampleGraphic('mountain');
+        loadImageIntoConverter(s.canvas, s.name);
+      });
+
+      document.querySelectorAll('.img-mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.imgMode;
+          state.img3d.mode = mode;
+          document.querySelectorAll('.img-mode-btn').forEach((b) => {
+            const active = b.dataset.imgMode === mode;
+            b.classList.toggle('border-2', active);
+            b.classList.toggle('border-[#14B8A6]', active);
+            b.classList.toggle('bg-[#F0FDFA]', active);
+            b.classList.toggle('border', !active);
+            b.classList.toggle('border-[#DDD4F0]', !active);
+            b.classList.toggle('bg-[#FAF8FF]', !active);
+          });
+          document.getElementById('img3d-mesh-controls').classList.toggle('hidden', mode === 'vision');
+          document.getElementById('img3d-vision-controls').classList.toggle('hidden', mode !== 'vision');
+          document.getElementById('img3d-logo-extras').classList.toggle('hidden', mode !== 'logo');
+          updateImg3DPreviews();
+        });
+      });
+
+      const bindSlider = (id, labelId, decimals, refresh) => {
+        safeOn(id, 'input', (e) => {
+          document.getElementById(labelId).textContent = decimals > 0 ? parseFloat(e.target.value).toFixed(decimals) : e.target.value;
+          if (refresh) updateImg3DPreviews();
+        });
+      };
+      bindSlider('ctrl-img-width', 'val-img-width', 0, false);
+      bindSlider('ctrl-img-height', 'val-img-height', 1, false);
+      bindSlider('ctrl-img-base', 'val-img-base', 1, false);
+      bindSlider('ctrl-img-smooth', 'val-img-smooth', 0, true);
+      bindSlider('ctrl-img-thresh', 'val-img-thresh', 0, true);
+      safeOn('ctrl-img-invert', 'change', updateImg3DPreviews);
+
+      safeOn('btn-convert-img3d', 'click', async () => {
+        if (!state.img3d.imageEl) return showToast('Upload an image or pick a sample first.', 'warn');
+        if (state.img3d.mode === 'vision') {
+          const hint = document.getElementById('ctrl-vision-prompt').value.trim();
+          const prompt = hint || `Inspect this image of "${state.img3d.name}" and build a printable 3D model of it on the bed.`;
+          closeModal('img3d-modal');
+          setAxelOpen(true);
+          await sendPromptToAxel(prompt, {
+            name: state.img3d.name,
+            mimeType: 'image/jpeg',
+            base64: state.img3d.dataUrl.split(',')[1],
+            dataUrl: state.img3d.dataUrl,
+          });
+          return;
+        }
+        const btn = document.getElementById('btn-convert-img3d');
+        const lbl = document.getElementById('btn-convert-label');
+        btn.disabled = true;
+        lbl.textContent = 'Generating 3D Mesh...';
+        setTimeout(() => {
+          try {
+            const group = buildWatertightHeightmapMesh(state.img3d.imageEl, {
+              widthMm: parseFloat(document.getElementById('ctrl-img-width').value),
+              reliefMm: parseFloat(document.getElementById('ctrl-img-height').value),
+              baseMm: parseFloat(document.getElementById('ctrl-img-base').value),
+              detail: parseInt(document.getElementById('ctrl-img-detail').value, 10),
+              smoothPasses: parseInt(document.getElementById('ctrl-img-smooth').value, 10),
+              invert: document.getElementById('ctrl-img-invert').checked,
+              mode: state.img3d.mode,
+              threshold: parseInt(document.getElementById('ctrl-img-thresh').value, 10),
+              includeBaseplate: document.getElementById('ctrl-logo-baseplate').checked,
+              addKeychainLoop: document.getElementById('ctrl-logo-keychain').checked,
+              name: state.img3d.name,
+            });
+            addModelToScene(group);
+            closeModal('img3d-modal');
+            showToast('Created watertight 3D object on build plate!', 'success');
+          } catch (err) {
+            console.error(err);
+            showToast('Conversion failed. Try lowering detail.', 'error');
+          } finally {
+            btn.disabled = false;
+            lbl.textContent = 'Convert & Place on Bed';
+          }
+        }, 25);
+      });
+
+      // MakerWorld Modal
+      safeOn('btn-close-mw', 'click', () => closeModal('makerworld-modal'));
+      safeOn('makerworld-modal', 'click', (e) => { if (e.target.id === 'makerworld-modal') closeModal('makerworld-modal'); });
+      safeOn('mw-search-input', 'input', renderStarterModels);
+      safeOn('modal-dropzone', 'click', () => fileInput.click());
+
+      document.querySelectorAll('.cat-pill').forEach((pill) => {
+        pill.addEventListener('click', () => {
+          state.activeCategory = pill.dataset.cat;
+          document.querySelectorAll('.cat-pill').forEach((p) => {
+            const active = p.dataset.cat === state.activeCategory;
+            p.classList.toggle('bg-[#0D9488]', active);
+            p.classList.toggle('text-white', active);
+            p.classList.toggle('font-bold', active);
+            p.classList.toggle('bg-[#FAF8FF]', !active);
+            p.classList.toggle('text-[#5E5278]', !active);
+            p.classList.toggle('border', !active);
+            p.classList.toggle('border-[#DDD4F0]', !active);
+          });
+          renderStarterModels();
+        });
+      });
+
+      // Export Modal
+      safeOn('btn-close-export', 'click', () => closeModal('export-modal'));
+      safeOn('export-modal', 'click', (e) => { if (e.target.id === 'export-modal') closeModal('export-modal'); });
+      document.querySelectorAll('.export-fmt-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.exportFormat = btn.dataset.exportFmt;
+          document.querySelectorAll('.export-fmt-btn').forEach((b) => {
+            const active = b.dataset.exportFmt === state.exportFormat;
+            b.classList.toggle('border-2', active);
+            b.classList.toggle('border-[#14B8A6]', active);
+            b.classList.toggle('bg-[#F0FDFA]', active);
+            b.classList.toggle('border', !active);
+            b.classList.toggle('border-[#DDD4F0]', !active);
+            b.classList.toggle('bg-[#FAF8FF]', !active);
+          });
+        });
+      });
+      safeOn('btn-confirm-export', 'click', performExport);
+
+      // Settings Modal
+      safeOn('btn-close-settings', 'click', () => closeModal('settings-modal'));
+      safeOn('settings-modal', 'click', (e) => { if (e.target.id === 'settings-modal') closeModal('settings-modal'); });
+      safeOn('btn-save-settings', 'click', () => {
+        const key = document.getElementById('settings-api-key').value.trim();
+        try {
+          if (key) localStorage.setItem(API_KEY_STORAGE, key);
+          else localStorage.removeItem(API_KEY_STORAGE);
+        } catch {}
+        closeModal('settings-modal');
+        showToast(key ? 'Saved custom Gemini API key!' : 'Cleared API key (using default runtime).', 'success');
+      });
+      safeOn('btn-clear-api-key', 'click', () => {
+        document.getElementById('settings-api-key').value = '';
+        try { localStorage.removeItem(API_KEY_STORAGE); } catch {}
+        showToast('API key cleared.', 'info');
+      });
+
+      // Axel AI Chat
+      const chatImageInput = document.getElementById('chat-image-input');
+      safeOn('btn-chat-upload-img', 'click', () => chatImageInput.click());
+      chatImageInput.addEventListener('change', (e) => {
+        if (e.target.files?.[0]) {
+          setChatAttachment(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+      safeOn('btn-clear-chat-attachment', 'click', clearChatAttachment);
+      safeOn('chat-form', 'submit', (e) => {
+        e.preventDefault();
+        sendPromptToAxel(document.getElementById('chat-input').value);
+      });
+      document.querySelectorAll('.chip-btn').forEach((chip) => {
+        chip.addEventListener('click', () => sendPromptToAxel(chip.dataset.prompt));
+      });
+
+      // Global Drag & Drop
+      let dragCount = 0;
+      window.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        dragCount++;
+        openModal('drop-overlay');
+      });
+      window.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dragCount--;
+        if (dragCount <= 0) {
+          dragCount = 0;
+          closeModal('drop-overlay');
+        }
+      });
+      window.addEventListener('dragover', (e) => e.preventDefault());
+      window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragCount = 0;
+        closeModal('drop-overlay');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) handleImportFile(file);
+      });
+
+      // Close Quick Add when clicking outside
+      document.addEventListener('click', () => closeModal('quick-add-menu'));
+
+      // Keyboard Shortcuts
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          ['img3d-modal', 'makerworld-modal', 'export-modal', 'settings-modal', 'quick-add-menu'].forEach(closeModal);
+          return;
+        }
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+        const k = e.key.toLowerCase();
+        if (k === 'q') setActiveTool('select');
+        else if (k === 'w' || k === 'g') setActiveTool('translate');
+        else if (k === 'e' || k === 'r') setActiveTool('rotate');
+        else if (k === 's') setActiveTool('scale');
+        else if (k === 'delete' || k === 'backspace') document.getElementById('btn-delete').click();
+        else if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); undo(); }
+        else if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); }
+      });
+
+      // Responsive Resize
+      window.addEventListener('resize', () => {
+        if (!engineReady) return;
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    // =========================================================================
+    // 14. ANIMATION LOOP & BOOTSTRAP
+    // =========================================================================
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!engineReady) return;
+      if (state.cameraGoal) {
+        camera.position.lerp(state.cameraGoal.pos, 0.08);
+        orbit.target.lerp(state.cameraGoal.target, 0.08);
+        if (camera.position.distanceTo(state.cameraGoal.pos) < 0.5) state.cameraGoal = null;
+      }
+      orbit.update();
+      if (selectionBox) selectionBox.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('load', () => {
+      mountAxelAvatars();
+      initThreeEngine();
+      bindAllEvents();
+      setAxelOpen(state.isAxelOpen);
+      if (engineReady) {
+        const starter = STARTER_MODELS.find((m) => m.id === 'axel-mascot').build();
+        addModelToScene(starter, { select: true, focus: true, recordUndo: false });
+      }
+      animate();
+    });
+  </script>
+</body>
+</html>
